@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+# tag a named branch
+# DO NOT merge with master
+
+# Determine this command name
+thisComFull=$(basename $0)
+fullCom="${thisComFull%.*}"
+
+# Usage function
+function usage() {
+    echo "Usage: $fullCom <existing branch> <new master tag>"
+    echo "   tag the designated branch and push changes to remote"
+    echo
+    echo "FOR EXPERT USE ONLY"
+}
+
+# Determine command options (just -h for help)
+while getopts ":h" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+
+# Capture the branch and master tag
+branch=${1}
+masterTag=${2}
+if [ -z "${branch}" ]
+then
+    echo 'ERROR: no branch specified'
+    usage
+    exit 1
+fi
+if [ -z "${masterTag}" ]
+then
+    echo 'ERROR: no master tag specified'
+    usage
+    exit 1
+fi
+
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "ERROR: $MRB_SOURCE/CMakeLists.txt not found"
+    exit 1
+fi
+
+# find the directories
+# ignore any directory that does not contain ups/product_deps
+list=`ls $MRB_SOURCE -1`
+for file in $list
+do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
+   fi
+done
+
+for REP in $pkglist
+do
+  cd ${MRB_SOURCE}/${REP}
+  git checkout ${branch}  || exit 1
+  version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+  echo "INFO: commit changes in ups/product_deps"
+  git commit -m"${REP} ${version} for larsoft ${masterTag}" ups/product_deps  || exit 1
+  echo "INFO: tag ${REP} ${version} on branch ${branch}"
+  git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
+  git push origin ${branch}  || exit 1
+  git push origin ${version} || exit 1
+done
+
+exit 0
+
