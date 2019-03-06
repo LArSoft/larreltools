@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# patch releases are vaa_bb_cc_dd
+# This script will increment dd by one
+
+# Determine this command name
+thisComFull=$(basename $0)
+thisDirFull=$(dirname $0)
+fullCom="${thisComFull%.*}"
+
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "$MRB_SOURCE/CMakeLists.txt not found"
+    exit 1
+fi
+
+# find the directories
+# ignore any directory that does not contain ups/product_deps
+list=`ls $MRB_SOURCE -1`
+for file in $list
+do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
+   fi
+done
+
+for REP in $pkglist
+do
+   parentline=`grep ^parent ${REP}/ups/product_deps`
+   echo ${parentline}
+   newversion=`${thisDirFull}/calculatePatchUpdate ${parentline}`
+   mystatus=$?
+   if (( $mystatus != 0 )); then exit 1; fi
+   echo
+   echo "updating ${REP} to ${newversion}"
+   mrb uv ${REP} ${newversion}
+done
