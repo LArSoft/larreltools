@@ -23,6 +23,7 @@ find_ups_product(cetbuildtools)
 
 # source code
 add_subdirectory(scripts)
+add_subdirectory(expert)
 add_subdirectory(ups)
 
 # packaging utility
