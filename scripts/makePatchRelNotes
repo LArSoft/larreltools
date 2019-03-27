@@ -165,6 +165,8 @@ echo "Download instructions for \"just larsoftobj ${larsoftobj_version}\":http:/
 echo >> ${relnote}
 echo "h2. Purpose" >> ${relnote}
 echo >> ${relnote}
+echo "* requested patch release" >> ${relnote}
+echo >> ${relnote}
 echo "h2. New features" >> ${relnote}
 echo >> ${relnote}
 echo "h2. Bug fixes" >> ${relnote}
