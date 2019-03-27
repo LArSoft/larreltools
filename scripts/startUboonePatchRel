@@ -60,6 +60,29 @@ tag=${2}
 larbranch=${3}
 ubranch=${4}
 
+mrbt=`type mrb`
+echo "mrb is $mrbt"
+
+# Some sanity checks -
+
+# Make sure we have ups
+if [ -z ${UPS_DIR} ]
+then
+   echo "ERROR: please setup ups and mrb"
+   exit 1
+fi
+# Check mrb
+if [ -z ${MRB_DIR} ]
+then
+   echo "ERROR: please setup mrb and define \${MRB_PROJECT}"
+   exit 1
+fi
+if [ -z ${MRB_PROJECT} ]
+then
+    echo "ERROR: MRB_PROJECT is not defined."
+    echo "       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)"
+    exit 2
+fi
 if [ -z "${working_dir}" ]
 then
     echo 'ERROR: no working_dir specified'
