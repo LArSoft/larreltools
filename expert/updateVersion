@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# release versions are vaa_bb_cc
+# This script will increment cc by one
+
+# Usage function
+function usage()
+{
+    echo "Usage: $fullCom [major|minor|micro]"
+    echo "  Increase release number by one as requested"
+    echo
+    echo "        major - increment major release number, minor and micro will be zero"
+    echo "        minor - increment minor release number, micro will be zero"
+    echo "        micro - increment micro release nuber"
+    echo
+    echo "  Release numbers are read from \$MRB_SOURCE/*/ups/product_deps"
+    echo "  If neither major, minor, nor micro is specified, the default is micro"
+}
+
+# increment the micro version
+function calculateMicroUpdate()
+{
+  local input=$1
+  local package=$2
+  local version=$3
+  newversion=empty
+  major=`echo $version | cut -f1 -d"_"`
+  minor=`echo $version | cut -f2 -d"_"`
+  oldmicro=`echo $version | cut -f3 -d"_" | sed -e 's/^0//'`
+  newmicro=$(($oldmicro+1))
+  microlen=${#newmicro}
+  ##echo "updating $input $package $version"
+  ##echo "  $major $minor $newmicro ${#newmicro}"
+  if [[ ${microlen} == 1 ]]; then
+     newversion="${major}_${minor}_0${newmicro}"
+  else
+     newversion="${major}_${minor}_${newmicro}"
+  fi
+}
+
+#########################################################
+
+# Determine this command name
+thisComFull=$(basename $0)
+thisDirFull=$(dirname $0)
+fullCom="${thisComFull%.*}"
+
+# Determine command options (just -h for help)
+while getopts ":h" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+
+# Capture the type
+type=${1}
+
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "$MRB_SOURCE/CMakeLists.txt not found"
+    exit 1
+fi
+
+# find the directories
+# ignore any directory that does not contain ups/product_deps
+list=`ls $MRB_SOURCE -1`
+for file in $list
+do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
+   fi
+done
+
+for REP in $pkglist
+do
+   echo
+   parentline=`grep ^parent ${REP}/ups/product_deps`
+   echo ${parentline}
+   calculateMicroUpdate ${parentline}
+   echo "updating ${REP} to ${newversion}"
+   mrb uv ${REP} ${newversion}
+done
