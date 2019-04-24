@@ -17,6 +17,27 @@ function usage()
     echo "  If neither major, minor, nor micro is specified, the default is micro"
 }
 
+# increment the minor version
+function calculateMinorUpdate()
+{
+  local input=$1
+  local package=$2
+  local version=$3
+  newversion=empty
+  major=`echo $version | cut -f1 -d"_"`
+  oldminor=`echo $version | cut -f2 -d"_" | sed -e 's/^0//'`
+  micro=`echo $version | cut -f3 -d"_"`
+  newminor=$(($oldminor+1))
+  minorlen=${#newminor}
+  ##echo "updating $input $package $version"
+  ##echo "  $major $minor $newminor ${#newminor}"
+  if [[ ${minorlen} == 1 ]]; then
+     newversion="${major}_0${newminor}_00"
+  else
+     newversion="${major}_${newminor}_00"
+  fi
+}
+
 # increment the micro version
 function calculateMicroUpdate()
 {
@@ -69,6 +90,13 @@ if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
     exit 1
 fi
 
+case $type in
+  major ) ;;
+  minor ) ;;
+  micro ) ;;
+  * ) echo 'ERROR: please specify major, minor, or micro'; usage ; exit 1 ;; 
+esac
+
 # find the directories
 # ignore any directory that does not contain ups/product_deps
 list=`ls $MRB_SOURCE -1`
@@ -88,7 +116,13 @@ do
    echo
    parentline=`grep ^parent ${REP}/ups/product_deps`
    echo ${parentline}
-   calculateMicroUpdate ${parentline}
+   if [[ ${type} == major ]]; then
+     echo "not yet implemented"
+   elif [[ ${type} == minor ]]; then
+     calculateMinorUpdate ${parentline}
+   elif [[ ${type} == micro ]]; then
+     calculateMicroUpdate ${parentline}
+   fi
    echo "updating ${REP} to ${newversion}"
    mrb uv ${REP} ${newversion}
 done
