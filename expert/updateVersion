@@ -6,15 +6,39 @@
 # Usage function
 function usage()
 {
-    echo "Usage: $fullCom [major|minor|micro]"
+    echo "Usage: $fullCom [-d|-h] <major|minor|micro>"
     echo "  Increase release number by one as requested"
     echo
     echo "        major - increment major release number, minor and micro will be zero"
     echo "        minor - increment minor release number, micro will be zero"
     echo "        micro - increment micro release nuber"
     echo
+    echo " options:"
+    echo "   -h - this help"
+    echo "   -d - dry run, no changes will be made"
+    echo
     echo "  Release numbers are read from \$MRB_SOURCE/*/ups/product_deps"
-    echo "  If neither major, minor, nor micro is specified, the default is micro"
+}
+
+# increment the major version
+function calculateMajorUpdate()
+{
+  local input=$1
+  local package=$2
+  local version=$3
+  newversion=empty
+  oldmajor=`echo $version | cut -f1 -d"_" | sed -e 's/^v//' | sed -e 's/^0//'`
+  minor=`echo $version | cut -f2 -d"_"`
+  micro=`echo $version | cut -f3 -d"_"`
+  newmajor=$(($oldmajor+1))
+  majorlen=${#newmajor}
+  #echo "updating $input $package $version"
+  #echo "  $major $newmajor ${#newmajor}"
+  if [[ ${majorlen} == 1 ]]; then
+     newversion="v0${newmajor}_00_00"
+  else
+     newversion="v${newmajor}_00_00"
+  fi
 }
 
 # increment the minor version
@@ -67,13 +91,16 @@ thisDirFull=$(dirname $0)
 fullCom="${thisComFull%.*}"
 
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":dh" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        d   ) dry_run=true ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
+shift `expr $OPTIND - 1`
+OPTIND=1
 
 # Capture the type
 type=${1}
@@ -115,14 +142,19 @@ for REP in $pkglist
 do
    echo
    parentline=`grep ^parent ${REP}/ups/product_deps`
-   echo ${parentline}
+   ##echo ${parentline}
+   oldversion=`echo ${parentline} | cut -f3 -d" "`
    if [[ ${type} == major ]]; then
-     echo "not yet implemented"
+     calculateMajorUpdate ${parentline}
    elif [[ ${type} == minor ]]; then
      calculateMinorUpdate ${parentline}
    elif [[ ${type} == micro ]]; then
      calculateMicroUpdate ${parentline}
    fi
-   echo "updating ${REP} to ${newversion}"
-   mrb uv ${REP} ${newversion}
+   echo "updating ${REP} from ${oldversion} to ${newversion}"
+   if [[ ${dry_run} == "true" ]]; then
+     echo "dry run - no change"
+   else
+     mrb uv ${REP} ${newversion}
+   fi
 done
