@@ -4,6 +4,7 @@ install_scripts( LIST
 		 cp-patch-tag
 		 dogit
 		 makePatchRelNotes
+                 startPatchRel
 		 startUboonePatchRel
 		 tagPatchRel
 		 updatePatchVersion

@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+
+# checkout uboone code and larsoft using explicit branches
+
+# Determine this command name
+thisComFull=$(basename $0)
+fullCom="${thisComFull%.*}"
+
+# Usage function
+function usage() {
+    echo "Usage: $fullCom <working_dir> <experiment> <new patch tag> <larsoft branch> [<experiment branch>]"
+    echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout larsoft_suite and experiment code"
+    echo "   create subdirectories for e17 and c2 builds"
+    echo
+    echo "   experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
+    echo
+    echo "FOR EXPERT USE ONLY"
+
+}
+
+# mkdir is a special case
+create_working_directory() {
+  if [ -d ${working_dir}/${newtag} ]
+  then
+      echo 'ERROR:  ${working_dir}/${newtag} already exists!'
+      usage
+      exit 1
+  fi
+  mkdir -p ${working_dir}/${newtag} || { echo "ERROR: failed to create ${working_dir}/${newtag}"; exit 1; }
+  mkdir -p ${working_dir}/${newtag}/e17p  ${working_dir}/${newtag}/e17d || { echo "ERROR: failed to create ${working_dir}/${newtag}/e17p"; exit 1; }
+  mkdir -p ${working_dir}/${newtag}/c2p  ${working_dir}/${newtag}/c2d || { echo "ERROR: failed to create ${working_dir}/${newtag}/c2p"; exit 1; }
+  cd ${working_dir}/${newtag}
+  echo "run mrb newDev"
+  mrb newDev -f -v ${newtag} -q e17:prof -T e17p || exit 1
+  mrb newDev -f -v ${newtag} -q e17:debug -T e17d || exit 1
+  mrb newDev -f -v ${newtag} -q c2:prof -T c2p || exit 1
+  mrb newDev -f -v ${newtag} -q c2:debug -T c2d || exit 1
+  echo "source localProductsXXX/setup"
+  source e17p/localProducts*/setup
+  cd $MRB_SOURCE
+  echo "checkout larsoft_suite"
+  mrb g -b ${larbranch} larsoft_suite
+  echo "checkout larsoftobj_suite"
+  mrb g -b ${larbranch} larsoftobj_suite
+  # now get the appropriate experiment code
+  if [[ ${experiment} == "argoneut" ]]; then
+  echo "checkout argoneutcode"
+  mrb g argoneutcode
+  elif [[ ${experiment} == "dune" ]]; then
+  echo "checkout dunetpc"
+  mrb g dunetpc
+  echo "checkout duneutil"
+  mrb g duneutil
+  elif [[ ${experiment} == "lariat" ]]; then
+  echo "checkout lariatsoft"
+  mrb g lariatsoft
+  mrb g -d lariatfragments lariat-online-lariatfragments
+  mrb g -d lariatutil lardbt-lariatutil
+  elif [[ ${experiment} == "icarus" ]]; then
+  echo "checkout icaruscode"
+  mrb g icaruscode
+  mrb g icarusutil
+  elif [[ ${experiment} == "sbnd" ]]; then
+  echo "checkout sbndcode"
+  mrb g sbndcode
+  mrb g sbndutil
+  elif [[ ${experiment} == "uboone" ]]; then
+  echo "checkout uboonecode"
+  mrb  g  -b ${expbranch} uboone_suite
+  else
+  echo "no experiment specified"
+  fi
+}
+
+# Determine command options (just -h for help)
+while getopts ":h" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+
+working_dir=${1}
+experiment=${2}
+newtag=${3}
+larbranch=${4}
+expbranch=${5}
+
+mrbt=`type mrb`
+echo "mrb is $mrbt"
+
+# Some sanity checks -
+
+# Make sure we have ups
+if [ -z ${UPS_DIR} ]
+then
+   echo "ERROR: please setup ups and mrb"
+   exit 1
+fi
+# Check mrb
+if [ -z ${MRB_DIR} ]
+then
+   echo "ERROR: please setup mrb and define \${MRB_PROJECT}"
+   exit 1
+fi
+if [ -z ${MRB_PROJECT} ]
+then
+    echo 'ERROR: MRB_PROJECT is not defined.'
+    echo '       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)'
+    exit 1
+fi
+if [ -z "${working_dir}" ]
+then
+    echo 'ERROR: no working_dir specified'
+    usage
+    exit 1
+fi
+if [ -z "${experiment}" ]
+then
+    echo 'ERROR: no experiment specified'
+    usage
+    exit 1
+fi
+if [ -z "${newtag}" ]
+then
+    echo 'ERROR: no new tag specified'
+    usage
+    exit 1
+fi
+if [ -z "${larbranch}" ]
+then
+    echo 'ERROR: no larsoft branch specified'
+    usage
+    exit 1
+fi
+if [ -z "${expbranch}" ]
+then
+    echo 'INFO: experiment branch not specified, using ${larbranch}'
+    expbranch=${larbranch}
+fi
+
+  create_working_directory 
+  exit 0
+
