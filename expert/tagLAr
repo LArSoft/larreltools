@@ -67,13 +67,16 @@ create_working_directory() {
       exit 1
   fi
   mkdir -p ${working_dir}/${tag} || { echo "ERROR: failed to create ${working_dir}/${tag}"; exit 1; }
-  #mkdir -p ${working_dir}/${tag}/p  ${working_dir}/${tag}/d || { echo "ERROR: failed to create ${working_dir}/${tag}/p"; exit 1; }
+  mkdir -p ${working_dir}/${tag}/e19p  ${working_dir}/${tag}/e19d || { echo "ERROR: failed to create ${working_dir}/${tag}/e19p"; exit 1; }
+  mkdir -p ${working_dir}/${tag}/c7p  ${working_dir}/${tag}/c7d || { echo "ERROR: failed to create ${working_dir}/${tag}/c7p"; exit 1; }
   mkdir -p ${working_dir}/${tag}/e17p  ${working_dir}/${tag}/e17d || { echo "ERROR: failed to create ${working_dir}/${tag}/e17p"; exit 1; }
   mkdir -p ${working_dir}/${tag}/c2p  ${working_dir}/${tag}/c2d || { echo "ERROR: failed to create ${working_dir}/${tag}/c2p"; exit 1; }
   cd ${working_dir}/${tag}
   echo "run mrb newDev"
-  #mrb newDev -f -v ${tag} -q e15:prof -T p || exit 1
-  #mrb newDev -f -v ${tag} -q e15:debug -T d || exit 1
+  mrb newDev -f -v ${tag} -q e19:prof -T e19p || exit 1
+  mrb newDev -f -v ${tag} -q e19:debug -T e19d || exit 1
+  mrb newDev -f -v ${tag} -q c7:prof -T c7p || exit 1
+  mrb newDev -f -v ${tag} -q c7:debug -T c7d || exit 1
   mrb newDev -f -v ${tag} -q e17:prof -T e17p || exit 1
   mrb newDev -f -v ${tag} -q e17:debug -T e17d || exit 1
   mrb newDev -f -v ${tag} -q c2:prof -T c2p || exit 1
