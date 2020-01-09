@@ -9,7 +9,7 @@ fullCom="${thisComFull%.*}"
 # Usage function
 function usage() {
     echo "Usage: $fullCom <working_dir> <new tag> <base qualifier>"
-    echo "   This script will do the following:
+    echo "   This script will do the following:"
     echo "       mkdir <working_dir>/<tag>"
     echo "       run newDev"
     echo "       git clone nulite repositories from redmine"
@@ -31,7 +31,8 @@ create_working_directory() {
       echo 'INFO:  adding build directories for ${basequal}'
   fi
   mkdir -p ${working_dir}/${tag} || { echo "ERROR: failed to create ${working_dir}/${tag}"; exit 1; }
-  mkdir -p ${working_dir}/${tag}/${basequal}p  ${working_dir}/${tag}/${basequal}d || { echo "ERROR: failed to create ${working_dir}/${tag}/${basequal}p"; exit 1; }
+  mkdir -p ${working_dir}/${tag}/${basequal}p  ${working_dir}/${tag}/${basequal}d || \
+     { echo "ERROR: failed to create ${working_dir}/${tag}/${basequal}p"; exit 1; }
   cd ${working_dir}/${tag}
   echo "run mrb newDev"
   mrb newDev -f -v ${tag} -q ${basequal}:prof -T ${basequal}p || exit 1
@@ -78,4 +79,3 @@ fi
 create_working_directory 
 
 exit 0
-
