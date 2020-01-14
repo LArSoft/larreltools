@@ -286,8 +286,8 @@ then
   case  ${tag} in
     major ) ;;
     minor ) ;;
-    micro ) ::
-    * ) echo "ERROR: unrecognized option ${tag}
+    micro ) ;;
+    * ) echo "ERROR: unrecognized option ${tag}"
         echo "       Please specify major, minor, or micro."
 	exit 1; ;;
   esac
