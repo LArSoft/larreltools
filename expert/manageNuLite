@@ -8,7 +8,7 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <start|tag|merge> <tag>"
+    echo "Usage: $fullCom <start|tag> <tag>"
     echo "Usage: $fullCom feature <new tag>"
     echo "Usage: $fullCom patch <new tag> <existing tag>"
     echo "Usage: $fullCom branch <new branch> <existing tag>"
@@ -20,12 +20,42 @@ function usage() {
     echo "   branch - create <branch> branch based on existing tag"
     echo "   use - use existing <branch> branch"
     echo "   update - modify product_deps release as specified"
-    echo "   tag - merge changes with master and tag"
+    echo "   tag - merge changes from release/<tag> and tag"
     echo "   tagbranch - tag the designated branch"
-    echo "   merge - merge changes with develop"
+    echo
+    echo "   This script tags with the release specified on the ups/product_deps parent line"
     echo
     echo "FOR EXPERT USE ONLY"
 
+}
+
+# commit ups/product_deps if necessary
+function commit_ups_product_deps() {
+    have_ups=`git status -s | grep ups/product_deps | wc -l`
+    if (( ${have_ups} != 0 )); then
+      git commit -m"${REP} ${version} for nulite ${tag}" ups/product_deps  || exit 1
+    fi
+    have_changes=`git status -s | wc -l`
+    if (( ${have_changes} != 0 )); then
+      echo "ERROR: The ${REP} repository contains uncommited changes"
+      echo "       Please commit or otherwise deal with these changes"
+      git status -s
+      exit 1
+    fi
+}
+
+function verify_match() {
+    echo "checking nutools and nulite versions"
+    nulite_version=`grep nulite ${MRB_SOURCE}/nutools/bundle/CMakeLists.txt | grep create_product_variables | cut -f2 -d"(" | cut -f1 -d")" | tr -s '[:space:]' | sed -e 's/\s*nulite\s*//'`
+    echo "found nulite_version ${nulite_version}"
+    nutools_version=`grep nutools ${MRB_SOURCE}/nutools/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+    echo "found nutools_version ${nutools_version}"
+    if [[ ${nutools_version} != ${nulite_version} ]]; then
+       echo "ERROR: nutools ${nutools_version} does not match nulite version ${nulite_version}"
+       echo "  Please use the following command to update the nulite version"
+       echo "    mrb uv nulite ${nutools_version}"
+       exit 1
+    fi
 }
 
 # Determine command options (just -h for help)
@@ -41,7 +71,6 @@ done
 flow=${1}
 tag=${2}
 extra=${3}
-extra_options=${4}
 if [ -z "${flow}" ]
 then
     echo 'ERROR: no options specified'
@@ -69,6 +98,7 @@ fi
 
 # find the directories
 # ignore any directory that does not contain ups/product_deps
+cd ${MRB_SOURCE}
 list=`ls $MRB_SOURCE -1`
 for file in $list
 do
@@ -178,16 +208,23 @@ fi
 
 if [ "${flow}" = "tag" ]
 then
+  echo "calling verify_match"
+  verify_match
   for REP in $pkglist
   do
      cd ${MRB_SOURCE}/${REP}
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     # make sure we are on the expected branch
+     git checkout release/${tag}  || exit 1
+     version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
      echo "begin ${REP} ${version}"
-     git commit -m"${REP} ${version} for nulite ${tag}" ups/product_deps  || exit 1
+     commit_ups_product_deps
      git checkout master  || exit 1
      git merge -m"${REP} ${version} for nulite ${tag}" release/${tag}   || exit 1
      git tag -a -m"${REP} ${version} for nulite ${tag}" ${version}  || exit 1
-     git push origin master ${version} || exit 1
+     git checkout develop  || exit 1
+     git pull  || exit 1
+     git merge -m"nulite ${tag}" release/${tag}  || exit 1
+     git push origin master develop ${version} || exit 1
   done
 fi
 
@@ -196,33 +233,15 @@ then
   for REP in $pkglist
   do
      echo
-     echo "begin ${REP} ${version}"
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout ${branch}  || exit 1
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
-     git commit -m"${REP} ${version} for nulite ${tag}" ups/product_deps  || exit 1
+     version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+     echo "begin ${REP} ${version}"
+     commit_ups_product_deps
      git tag -a -m"${REP} ${version} for nulite ${tag}" ${version}  || exit 1
      git push origin ${branch} ${version} || exit 1
   done
 fi
-
-if [ "${flow}" = "merge" ]
-then
-  for REP in $pkglist
-  do
-     set -x 
-     cd ${MRB_SOURCE}/${REP}
-     echo "begin ${REP}"
-     ##git checkout master  || exit 1
-     ##git pull  || exit 1
-     git checkout develop  || exit 1
-     git pull  || exit 1
-     git merge -m"nulite ${tag}" release/${tag}  || exit 1
-     git push origin develop  || exit 1
-     ##git branch -d release/${tag}   || exit 1
-  done
-fi
-
 
 exit 0
