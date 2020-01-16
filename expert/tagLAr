@@ -140,6 +140,21 @@ create_working_directory() {
   fi
 }
 
+# commit ups/product_deps if necessary
+function commit_ups_product_deps() {
+    have_ups=`git status -s | grep ups/product_deps | wc -l`
+    if (( ${have_ups} != 0 )); then
+      git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+    fi
+    have_changes=`git status -s | wc -l`
+    if (( ${have_changes} != 0 )); then
+      echo "ERROR: The ${REP} repository contains uncommited changes"
+      echo "       Please commit or otherwise deal with these changes"
+      git status -s
+      exit 1
+    fi
+}
+
 # Determine command options (just -h for help)
 while getopts ":h" OPTION
 do
@@ -302,7 +317,7 @@ then
      cd ${MRB_SOURCE}/${REP}
      version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
      echo "begin ${REP} ${version}"
-     git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+     commit_ups_product_deps
      git checkout master  || exit 1
      git merge -m"${REP} ${version} for larsoft ${tag}" release/${tag}   || exit 1
      git tag -a -m"${REP} ${version} for larsoft ${tag}" ${version}  || exit 1
@@ -320,7 +335,7 @@ then
      # make sure we are on the expected branch
      git checkout ${branch}  || exit 1
      version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
-     git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+     commit_ups_product_deps
      git tag -a -m"${REP} ${version} for larsoft ${tag}" ${version}  || exit 1
      git push origin ${branch} ${version} || exit 1
   done
@@ -333,10 +348,8 @@ then
      cd ${MRB_SOURCE}/${REP}
      version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
      echo "begin ${REP} ${version}"
-     ##rm -f ups/product_deps.bak
-     git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+     commit_ups_product_deps
      git checkout master  || exit 1
-     ##git diff release/${tag}   || exit 1
      git merge -m"${REP} ${version} for larsoft ${tag}" release/${tag}   || exit 1
      git tag -a -f -m"${REP} ${version} for larsoft ${tag}" ${version}  || exit 1
      git push origin master  || exit 1
@@ -351,13 +364,10 @@ then
      set -x 
      cd ${MRB_SOURCE}/${REP}
      echo "begin ${REP}"
-     ##git checkout master  || exit 1
-     ##git pull  || exit 1
      git checkout develop  || exit 1
      git pull  || exit 1
      git merge -m"larsoft ${tag}" release/${tag}  || exit 1
      git push origin develop  || exit 1
-     ##git branch -d release/${tag}   || exit 1
   done
 fi
 
