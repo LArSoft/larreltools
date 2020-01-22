@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+
+# This script presumes that you already have a working mrb directory
+
+# functions: start release branch
+#            update versions 
+#            commit changes and push release branch to fork
+#            make pull request and save content for a test build
+
+# Determine this command name
+thisComFull=$(basename $0)
+fullCom="${thisComFull%.*}"
+
+# Usage function
+function usage() {
+    echo "Usage: $fullCom <start|commit|pr> <tag>"
+    echo "Usage: $fullCom update <major|minor|micro>"
+    echo "   start - create release/<tag> branch"
+    echo "   update - modify product_deps release as specified"
+    echo "   commit - commit changes in product_deps and push the fork"
+    echo "   pr - initiate a pull request"
+    echo
+    echo "FOR EXPERT USE ONLY"
+
+}
+
+# Determine command options (just -h for help)
+while getopts ":h" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+
+# Capture the tag
+flow=${1}
+tag=${2}
+if [ -z "${flow}" ]
+then
+    echo 'ERROR: no options specified'
+    usage
+    exit 1
+fi
+
+# check for a valid command
+case $flow in
+    start ) ;;
+    update ) ;;
+    commit ) ;;
+    pr ) ;;
+    *   ) echo "ERROR: Unknown option $flow" ; usage ; exit 1 ;;
+esac
+
+
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "$MRB_SOURCE/CMakeLists.txt not found"
+    exit 1
+fi
+
+if [ -z "${tag}" ]
+then
+    echo 'ERROR: no tag specified'
+    usage
+    exit 1
+fi
+
+# pkglist is not required for this step
+if [ "${flow}" = "update" ]
+then
+  case  ${tag} in
+    major ) ;;
+    minor ) ;;
+    micro ) ;;
+    * ) echo "ERROR: unrecognized option ${tag}"
+        echo "       Please specify major, minor, or micro."
+	exit 1; ;;
+  esac
+  echo "calling updateVersion ${tag}"
+  updateVersion ${tag}
+  exit 0
+fi
+
+# find the directories
+# ignore any directory that does not contain ups/product_deps
+list=`ls $MRB_SOURCE -1`
+for file in $list
+do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
+   fi
+done
+
+if [ "${flow}" = "start" ]
+then
+  branch=release/${tag}
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     have_branch=`git branch | grep ${branch} | wc -l`
+     if (( ${have_branch} > 0 )); then
+       echo "${REP} ${branch} exists"
+       git checkout ${branch}
+       okflow=$?
+     else
+       echo "create ${REP} ${branch}"
+       git checkout develop
+       git checkout -b release/${tag}
+       okflow=$?
+     fi
+     if [ ! ${okflow} ]
+     then
+	echo "${REP} git checkout -b release failure: ${okflow}"
+	exit 1
+     fi
+  done
+fi
+
+if [ "${flow}" = "commit" ]
+then
+  branch=release/${tag}
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     # make sure we are on the expected branch
+     git checkout ${branch}  || exit 1
+     # check status
+     modified_files=`git status | grep modified | wc -l`
+     new_product_deps=`git status | grep product_deps | wc -l`
+     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     if (( ${modified_files} == 0 )); then
+       echo "nothing to commit in ${REP}"
+     elif (( ${modified_files} == 1 )); then
+       if (( ${new_product_deps} == 1 )); then
+         echo "begin ${REP} ${version}"
+         git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+         git push origin ${branch} || exit 1
+       else
+         echo "please commit changes other than product_deps in ${REP}"
+         exit 1
+       fi
+     else
+       echo "please commit changes other than product_deps in ${REP}"
+       exit 1
+     fi
+  done
+fi
+
+if [ "${flow}" = "pr" ]
+then
+  cfg_file=${MRB_SOURCE}/larsoft-${tag}-prs
+  pkgPRs=()
+  echo "" > ${cfg_file}
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     echo "begin ${REP}"
+     modified_files=`git status | grep modified | wc -l`
+     if (( ${modified_files} > 0 )); then
+       echo "please commit changes in ${REP}"
+       exit 1
+     fi
+     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     pr_name=`hub pull-request -m\"${REP} ${version} for larsoft ${tag}\"`
+     okflow=$?
+     if [ ! ${okflow} ]
+     then
+	echo "${REP} hub pull-request failure: ${okflow}"
+	exit 1
+     fi
+     echo " ${pr_name}" >> ${cfg_file}
+     pkgPRs+=("${pr_name}")
+  done
+  echo "" >> ${cfg_file}
+  echo "buildPR -q <quals> <build dir> ${pkgPRs[*]}" >> ${cfg_file}
+  echo "" >> ${cfg_file}
+fi
+
+exit 0
