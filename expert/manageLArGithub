@@ -145,6 +145,7 @@ then
        if (( ${new_product_deps} == 1 )); then
          echo "begin ${REP} ${version}"
          git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
+         hub fork --remote-name=origin
          git push origin ${branch} || exit 1
        else
          echo "please commit changes other than product_deps in ${REP}"
