@@ -9,10 +9,11 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <working_dir> <new tag>"
+    echo "Usage: $fullCom <working_dir> <new tag> [argoneut|dune|icarus|lariat|sbnd|uboone]"
     echo "       mkdir <working_dir>/<tag>"
     echo "       run newDev"
-    echo "       git clone larsoft repositories from github"
+    echo "       git clone larsoft and specified experiment repositories from github"
+    echo "  If the third argument is not specified, all experiment repositories will be cloned."
     echo
 }
 
@@ -46,6 +47,59 @@ create_working_directory() {
   mrb g --repo-type github larsoft_suite
   echo "checkout larsoftobj_suite"
   mrb g --repo-type github larsoftobj_suite
+  echo "checkout larbatch"
+  mrb g --repo-type github larbatch
+  echo "checkout larutils"
+  mrb g --repo-type github larutils
+  echo "checkout larpandoracontent"
+  mrb g --repo-type github larpandoracontent
+  # look for extra options 
+  if [ -z "${extra_options}" ]; then
+    echo "checkout dunetpc"
+    mrb g dunetpc
+    echo "checkout duneutil"
+    mrb g duneutil
+    echo "checkout lariatsoft"
+    mrb g lariatsoft
+    mrb g lariatfragments
+    mrb g lariatutil
+    echo "checkout sbndcode"
+    mrb g sbndcode
+    mrb g sbndutil
+    echo "checkout uboonecode"
+    mrb  g uboone_suite
+    echo "checkout argoneutcode"
+    mrb g argoneutcode
+    ##echo "checkout icaruscode"
+    ##mrb g icaruscode
+  elif [[ ${extra_options} == "argoneut" ]]; then
+    echo "checkout argoneutcode"
+    mrb g argoneutcode
+  elif [[ ${extra_options} == "dune" ]]; then
+    echo "checkout dunetpc"
+    mrb g dunetpc
+    echo "checkout duneutil"
+    mrb g duneutil
+  elif [[ ${extra_options} == "icarus" ]]; then
+    echo "checkout icaruscode"
+    mrb g icaruscode
+    mrb g icarusutil
+  elif [[ ${extra_options} == "lariat" ]]; then
+    echo "checkout lariatsoft"
+    mrb g lariatsoft
+    mrb g -d lariatfragments lariat-online-lariatfragments
+    mrb g -d lariatutil lardbt-lariatutil
+  elif [[ ${extra_options} == "sbnd" ]]; then
+    echo "checkout sbndcode"
+    mrb g sbndcode
+    mrb g sbndutil
+  elif [[ ${extra_options} == "uboone" ]]; then
+    echo "checkout uboonecode"
+    mrb  g uboone_suite
+  else
+    echo "ERROR: unrecognized option ${extra_options}"
+    exit 1
+  fi
 }
 
 # Determine command options (just -h for help)
@@ -59,6 +113,7 @@ done
 
 working_dir=${1}
 tag=${2}
+extra_options=${3}
 
 if [ -z "${working_dir}" ]
 then
