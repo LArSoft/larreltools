@@ -43,9 +43,9 @@ create_working_directory() {
   source e19p/localProducts*/setup
   cd $MRB_SOURCE
   echo "checkout larsoft_suite"
-  mrb g --repo-type github --fork larsoft_suite
+  mrb g --repo-type github larsoft_suite
   echo "checkout larsoftobj_suite"
-  mrb g --repo-type github --fork larsoftobj_suite
+  mrb g --repo-type github larsoftobj_suite
 }
 
 # Determine command options (just -h for help)
