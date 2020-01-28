@@ -8,35 +8,36 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <working_dir> <experiment> <new patch tag> <larsoft branch> [<experiment branch>]"
-    echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout larsoft_suite and experiment code"
-    echo "   create subdirectories for e17 and c2 builds"
-    echo
-    echo "   experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
+    echo "Usage: $fullCom <working_dir> [-e <experiment>] [-q <base qualifier>] <new patch tag> <larsoft branch> [<experiment branch>]"
+    echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout code"
+    echo "  options:"
+    echo "   -q <base qualifier>: create subdirectories the specified qualifier"
+    echo "      If the base qualifier (e17, e19, c2, c7, etc.) is not specified,"
+    echo "        create subdirectories for e17"
+    echo "   -e <experiment>: checkout larsoft and experiment code"
+    echo "      experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
+    echo "      If no experiment is specified, only checkout larsoft."
     echo
     echo "FOR EXPERT USE ONLY"
 
 }
 
-# mkdir is a special case
 create_working_directory() {
   if [ -d ${working_dir}/${newtag} ]
   then
-      echo 'ERROR:  ${working_dir}/${newtag} already exists!'
-      usage
-      exit 1
+      echo 'INFO:  ${working_dir}/${newtag} already exists!'
+      echo 'INFO:  adding build directories for ${basequal}'
+  else
+      mkdir -p ${working_dir}/${newtag} || { echo "ERROR: failed to create ${working_dir}/${newtag}"; exit 1; }
   fi
-  mkdir -p ${working_dir}/${newtag} || { echo "ERROR: failed to create ${working_dir}/${newtag}"; exit 1; }
-  mkdir -p ${working_dir}/${newtag}/e17p  ${working_dir}/${newtag}/e17d || { echo "ERROR: failed to create ${working_dir}/${newtag}/e17p"; exit 1; }
-  mkdir -p ${working_dir}/${newtag}/c2p  ${working_dir}/${newtag}/c2d || { echo "ERROR: failed to create ${working_dir}/${newtag}/c2p"; exit 1; }
+  mkdir -p ${working_dir}/${newtag}/${basequal}p  ${working_dir}/${newtag}/${basequal}d || \
+    { echo "ERROR: failed to create ${working_dir}/${newtag}/${basequal}p"; exit 1; }
   cd ${working_dir}/${newtag}
   echo "run mrb newDev"
-  mrb newDev -f -v ${newtag} -q e17:prof -T e17p || exit 1
-  mrb newDev -f -v ${newtag} -q e17:debug -T e17d || exit 1
-  mrb newDev -f -v ${newtag} -q c2:prof -T c2p || exit 1
-  mrb newDev -f -v ${newtag} -q c2:debug -T c2d || exit 1
+  mrb newDev -f -v ${newtag} -q ${basequal}:prof -T ${basequal}p || exit 1
+  mrb newDev -f -v ${newtag} -q ${basequal}:debug -T ${basequal}d || exit 1
   echo "source localProductsXXX/setup"
-  source e17p/localProducts*/setup
+  source ${basequal}p/localProducts*/setup
   cd $MRB_SOURCE
   echo "checkout larsoft_suite"
   mrb g -b ${larbranch} larsoft_suite
@@ -44,48 +45,49 @@ create_working_directory() {
   mrb g -b ${larbranch} larsoftobj_suite
   # now get the appropriate experiment code
   if [[ ${experiment} == "argoneut" ]]; then
-  echo "checkout argoneutcode"
-  mrb g argoneutcode
+    echo "checkout argoneutcode"
+    mrb g argoneutcode
   elif [[ ${experiment} == "dune" ]]; then
-  echo "checkout dunetpc"
-  mrb g dunetpc
-  echo "checkout duneutil"
-  mrb g duneutil
+    echo "checkout dunetpc"
+    mrb g dunetpc
+    echo "checkout duneutil"
+    mrb g duneutil
   elif [[ ${experiment} == "lariat" ]]; then
-  echo "checkout lariatsoft"
-  mrb g lariatsoft
-  mrb g -d lariatfragments lariat-online-lariatfragments
-  mrb g -d lariatutil lardbt-lariatutil
+    echo "checkout lariatsoft"
+    mrb g lariatsoft
+    mrb g -d lariatfragments lariat-online-lariatfragments
+    mrb g -d lariatutil lardbt-lariatutil
   elif [[ ${experiment} == "icarus" ]]; then
-  echo "checkout icaruscode"
-  mrb g icaruscode
-  mrb g icarusutil
+    echo "checkout icaruscode"
+    mrb g icaruscode
+    mrb g icarusutil
   elif [[ ${experiment} == "sbnd" ]]; then
-  echo "checkout sbndcode"
-  mrb g sbndcode
-  mrb g sbndutil
+    echo "checkout sbndcode"
+    mrb g sbndcode
+    mrb g sbndutil
   elif [[ ${experiment} == "uboone" ]]; then
-  echo "checkout uboonecode"
-  mrb  g  -b ${expbranch} uboone_suite
+    echo "checkout uboonecode"
+    mrb  g  -b ${expbranch} uboone_suite
   else
-  echo "no experiment specified"
+    echo "no experiment specified - just checking out larsoft"
   fi
 }
 
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":h:e:q:" OPTION
 do
     case $OPTION in
+        e   ) experiment="$OPTARG" ;;
+	q   ) basequal="$OPTARG" ;;
         h   ) usage ; exit 0 ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
 
 working_dir=${1}
-experiment=${2}
-newtag=${3}
-larbranch=${4}
-expbranch=${5}
+newtag=${2}
+larbranch=${3}
+expbranch=${4}
 
 mrbt=`type mrb`
 echo "mrb is $mrbt"
@@ -116,12 +118,6 @@ then
     usage
     exit 1
 fi
-if [ -z "${experiment}" ]
-then
-    echo 'ERROR: no experiment specified'
-    usage
-    exit 1
-fi
 if [ -z "${newtag}" ]
 then
     echo 'ERROR: no new tag specified'
@@ -138,6 +134,15 @@ if [ -z "${expbranch}" ]
 then
     echo 'INFO: experiment branch not specified, using ${larbranch}'
     expbranch=${larbranch}
+fi
+if [ -z "${experiment}" ]
+then
+    echo 'INFO: no experiment specified'
+fi
+if [ -z "${basequal}" ]
+then
+    echo 'INFO: no base qualifier specified, will use e17'
+    basequal=e17
 fi
 
   create_working_directory 
