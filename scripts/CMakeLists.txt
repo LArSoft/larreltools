@@ -6,7 +6,6 @@ install_scripts( LIST
 		 dogit
 		 makePatchRelNotes
                  startPatchRel
-		 startUboonePatchRel
 		 tagPatchRel
 		 updatePatchVersion
                )
