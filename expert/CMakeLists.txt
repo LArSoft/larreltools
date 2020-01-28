@@ -1,9 +1,9 @@
 
 INSTALL ( PROGRAMS  cp-lar-tag
                     make-release-notes
-		    makeLArGitHubWorkDir
-		    makeNuLiteWorkDir
+		    startLArSoftRel
+		    startNuLiteRel
+		    manageLArGithub
                     manageNuLite
-                    tagLAr
                     updateVersion
           DESTINATION ${product}/${version}/expert )
