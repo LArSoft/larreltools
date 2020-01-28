@@ -44,15 +44,15 @@ create_working_directory() {
   source e19p/localProducts*/setup
   cd $MRB_SOURCE
   echo "checkout larsoft_suite"
-  mrb g --repo-type github larsoft_suite
+  mrb g --repo-type github --fork larsoft_suite
   echo "checkout larsoftobj_suite"
-  mrb g --repo-type github larsoftobj_suite
+  mrb g --repo-type github --fork larsoftobj_suite
   echo "checkout larbatch"
-  mrb g --repo-type github larbatch
+  mrb g --repo-type github --fork larbatch
   echo "checkout larutils"
-  mrb g --repo-type github larutils
+  mrb g --repo-type github --fork larutils
   echo "checkout larpandoracontent"
-  mrb g --repo-type github larpandoracontent
+  mrb g --repo-type github --fork larpandoracontent
   # look for extra options 
   if [ -z "${extra_options}" ]; then
     echo "checkout dunetpc"
