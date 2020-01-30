@@ -13,12 +13,14 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <start|commit|pr> <tag>"
+    echo "Usage: $fullCom <start|commit|pr|tag|merge-develop> <tag>"
     echo "Usage: $fullCom update <major|minor|micro>"
     echo "   start - create release/<tag> branch"
     echo "   update - modify product_deps release as specified"
     echo "   commit - commit changes in product_deps and push the fork"
     echo "   pr - initiate a pull request"
+    echo "   tag - tag the master branch"
+    echo "   merge-develop - merge the master branch with develop"
     echo
     echo "FOR EXPERT USE ONLY"
 
@@ -49,6 +51,8 @@ case $flow in
     update ) ;;
     commit ) ;;
     pr ) ;;
+    tag ) ;;
+    merge-develop ) ;;
     *   ) echo "ERROR: Unknown option $flow" ; usage ; exit 1 ;;
 esac
 
@@ -186,6 +190,25 @@ then
   echo "" >> ${cfg_file}
   echo "buildPR -q <quals> <build dir> ${pkgPRs[*]}" >> ${cfg_file}
   echo "" >> ${cfg_file}
+fi
+
+if [ "${flow}" = "tag" ]
+then
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     echo "begin ${REP}"
+     git checkout master
+     git pull upstream master
+     code_diff=`git diff release/${tag} | wc -l`
+     if (( ${code_diff} > 0 )); then
+	echo "${REP} master does not match release/${tag} - check and fix"
+	exit 1
+     fi
+     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     git tag -a -m"${REP} ${version} for larsoft ${tag}" ${version}  || exit 1
+     git push upstream master ${version} || exit 1
+  done
 fi
 
 exit 0
