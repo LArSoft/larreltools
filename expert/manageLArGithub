@@ -13,14 +13,14 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <start|commit|pr|tag|merge-develop> <tag>"
+    echo "Usage: $fullCom <start|commit|pr|tag|merge> <tag>"
     echo "Usage: $fullCom update <major|minor|micro>"
     echo "   start - create release/<tag> branch"
     echo "   update - modify product_deps release as specified"
     echo "   commit - commit changes in product_deps and push the fork"
     echo "   pr - initiate a pull request"
     echo "   tag - tag the master branch"
-    echo "   merge-develop - merge the master branch with develop"
+    echo "   merge - merge the master branch with develop"
     echo
     echo "FOR EXPERT USE ONLY"
 
@@ -52,7 +52,7 @@ case $flow in
     commit ) ;;
     pr ) ;;
     tag ) ;;
-    merge-develop ) ;;
+    merge ) ;;
     *   ) echo "ERROR: Unknown option $flow" ; usage ; exit 1 ;;
 esac
 
@@ -208,6 +208,19 @@ then
      version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
      git tag -a -m"${REP} ${version} for larsoft ${tag}" ${version}  || exit 1
      git push upstream master ${version} || exit 1
+  done
+fi
+
+if [ "${flow}" = "merge" ]
+then
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     echo "begin ${REP}"
+     git checkout develop  || { echo "ERROR: git checkout develop failed"; exit 1; }
+     git pull upstream develop || { echo "ERROR: git pull develop failed"; exit 1; }
+     git merge -m"larsoft ${tag}" master  || { echo "ERROR: git merge failed"; exit 1; }
+     git push upstream develop  || { echo "ERROR: git push develop failed"; exit 1; }
   done
 fi
 
