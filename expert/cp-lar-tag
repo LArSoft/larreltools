@@ -1,27 +1,34 @@
 #!/bin/bash
 ########################################################################
-# cp-tag
+# cp-lar-tag
 #
 # LArSoft-specific cross-package tagger.
 #
-# Requires MANAGER role on all packages to be tagged (including larsoft).
+# Requires level 1 permissions on all packages to be tagged
+# clone larsoft and use releaseDB/CMakeLists.txt
 #
-#
-# Takes at least one version argument,
 ########################################################################
 
-# Subsidiary packages to be tagged, These must be in order: ie package
-# n's product_list must set up package n+1.
-declare -a packages=(larana larreco larsim  larevt lardata larcore)
-declare -a extra_packages=(lareventdisplay larexamples larg4 larpandora larwirecell)
-declare -a obj_packages=(lardataobj larcoreobj)
-declare -a alg_packages=(lardataalg larcorealg)
+# Subsidiary packages to be checked.
+declare -a packages=(larana larreco larsim larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj larbatch larutils)
+
 # Tag message.
 tag_msg='LArSoft suite cross-package tag'
 
-function ensure_gitconfig() {
-    local package=$1
-    ssh p-$1@cdcvs.fnal.gov "git config --global user.name '$package admin'"
+function get_working_dir() 
+{
+    cd ${currentDir}
+    if [ -d ${working_dir}/${larsoft_version} ]; then
+            echo "ERROR: ${working_dir}/${larsoft_version} already exists!"
+            exit 5
+    fi
+    mkdir -p ${working_dir}/${larsoft_version}
+    # git the full path
+    ( cd / ; /bin/pwd -P ) >/dev/null 2>&1
+    if (( $? == 0 )); then
+      pwd_P_arg="-P"
+    fi
+    my_working_dir=`cd ${working_dir}/${larsoft_version} && /bin/pwd ${pwd_P_arg}`
 }
 
 function maybe_tag() {
@@ -29,35 +36,32 @@ function maybe_tag() {
     shift
     cat <<EOF
 git tag | grep -qe '^'"$tag"'\$' && echo "tag $tag already exists: doing nothing." || \
-  { echo "applying tag $tag."; git tag -am '$tag_msg' '$tag' "$*" && git update-server-info; }
+  { echo "applying tag $tag."; git tag -am '$tag_msg' '$tag' "$*" && git push origin '$tag'; }
 EOF
 }
 
-function ptag() {
-    local package=$1
-    local tag=$2
-    local pv=$3
-    printf "Tagging version $pv of $package with cross-package tag $tag: "
-    ssh p-$1@cdcvs.fnal.gov "cd '/cvs/projects/${package}' && `maybe_tag $tag \"$pv\"`"
+function get_package_release()
+{
+  # check larsoft/releaseDB/CMakeLists.txt
+  local pkg=$1
+  local pkgmatch="\<${pkg}\>"
+  local pkgline=`grep "${pkgmatch}" ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt | grep create_product_variables`
+  pkgver=`echo ${pkgline} | sed -e 's%create_product_variables%%' | sed -e 's%(%%' | sed -e 's%)%%' | sed -e s%${pkg}%%`
+  if (( `echo ${pkgver} | wc -w` != 1 )); then
+     echo "ERROR: bad match for $pkg in ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt"
+     exit 1
+  fi
+  ##echo "Found $pkg tag $pkgver corresponding to LArSoft tag $larsoft_version."
 }
 
-function product_for() {
-  local package=$1
-  case $package in
-      fhicl-cpp)
-        echo "fhiclcpp"
-      ;;
-      *)
-        echo "$package"
-  esac
-}
+################################################################################
 
 prog=${0##*/}
 
 function usage() {
     cat 1>&2 <<EOF
 ${prog} --help|-h|-\?
-${prog} <larsoft tag> <larsoftobj tag>
+${prog} <working_directory> <tag>
 EOF
 }
 
@@ -68,6 +72,7 @@ if (( $? != 4 )); then
 fi
 
 TEMP=`getopt -n "$prog" -o ':h\?' --long help -- "${@}"`
+currentDir=${PWD}
 
 eval set -- "$TEMP"
 while true; do
@@ -87,103 +92,46 @@ while true; do
   esac
 done
 
-[[ -z "$1" ]] && { usage; exit 1; }
-[[ -z "$2" ]] && { usage; exit 1; }
+[[ -z "$1" ]] && { 
+  echo "Require working directory as non-option argument" 1>&2; usage; exit 1; }
+[[ -z "$2" ]] && { echo "Require existing LArSoft tag as non-option argument" 1>&2; usage; exit 1; }
 
-  larsoft_version=$1
-  larsoftobj_version=$2
+working_dir=$1
+larsoft_version=$2
 
-  ensure_gitconfig larsoft
-  ssh p-larsoft@cdcvs.fnal.gov "cd /cvs/projects/larsoft && { git tag | grep -q $larsoft_version || { echo 'Unable to find LArSoft tag ${larsoft_version}' 1>&2; exit 1; }; } && `maybe_tag \"LARSOFT_SUITE_${larsoft_version}\" \"${larsoft_version}\"`"
+# create ${working_dir}/${larsoft_version}
+get_working_dir
 
-  ensure_gitconfig larsoftobj
-  ssh p-larsoftobj@cdcvs.fnal.gov "cd /cvs/projects/larsoftobj && { git tag | grep -q $larsoftobj_version || { echo 'Unable to find LArSoft tag ${larsoftobj_version}' 1>&2; exit 1; }; } && `maybe_tag \"LARSOFT_SUITE_${larsoft_version}\" \"${larsoftobj_version}\"`"
+repository=https://github.com/LArSoft
+suffix=.git
+suite_tag=LARSOFT_SUITE_${larsoft_version}
 
-  last_pkg=larsoft
-  for package in "${packages[@]}"; do
-    product=`product_for "$package"`
-    pv=`wget --no-check-certificate -q -O - "https://cdcvs.fnal.gov/redmine/projects/${last_pkg}/repository/raw/ups/product_deps?rev=LARSOFT_SUITE_${larsoft_version}" | \
-     grep    -e '^[ 	]*'"$product"'[ 	]\{1,\}' | \
-     sed -e 's/^[ 	]*'"$product"'[ 	]\{1,\}\(v[^ 	]*\).*$/\1/'`
-    if [[ -n "$pv" ]]; then
-      echo "Found $package tag $pv corresponding to LArSoft tag $larsoft_version."
-    else
-      echo "Could not find tag for package $package corresponding to LArSoft tag $larsoft_version." 1>&2
-      continue
-    fi
-    ensure_gitconfig $package
-    ptag "${package}" "LARSOFT_SUITE_${larsoft_version}" "${pv}"
-    last_pkg=${package}
-  done
+# start with larsoft
+cd ${my_working_dir}
+package=larsoft
+git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
+cd ${my_working_dir}/${package}
+git checkout master
+have_match=`git diff ${larsoft_version} | wc -l`
+if (( ${have_match} > 0 )); then
+  echo "ERROR: master branch is ahead of ${larsoft_version}"
+  exit 1
+fi
+maybe_tag "${suite_tag}"
 
-  last_pkg=larsoft
-  for package in "${extra_packages[@]}"; do
-    product=`product_for "$package"`
-    pv=`wget --no-check-certificate -q -O - "https://cdcvs.fnal.gov/redmine/projects/${last_pkg}/repository/raw/ups/product_deps?rev=LARSOFT_SUITE_${larsoft_version}" | \
-     grep    -e '^[ 	]*'"$product"'[ 	]\{1,\}' | \
-     sed -e 's/^[ 	]*'"$product"'[ 	]\{1,\}\(v[^ 	]*\).*$/\1/'`
-    if [[ -n "$pv" ]]; then
-      echo "Found $package tag $pv corresponding to LArSoft tag $larsoft_version."
-    else
-      echo "Could not find tag for package $package corresponding to LArSoft tag $larsoft_version." 1>&2
-      continue
-    fi
-    ensure_gitconfig $package
-    ptag "${package}" "LARSOFT_SUITE_${larsoft_version}" "${pv}"
-  done
-  
-  # larpandoracontent
-  last_pkg=larpandora
-  package=larpandoracontent
-  product=`product_for "$package"`
-  pv=`wget --no-check-certificate -q -O - "https://cdcvs.fnal.gov/redmine/projects/${last_pkg}/repository/raw/ups/product_deps?rev=LARSOFT_SUITE_${larsoft_version}" | \
-   grep    -e '^[ 	]*'"$product"'[ 	]\{1,\}' | \
-   sed -e 's/^[ 	]*'"$product"'[ 	]\{1,\}\(v[^ 	]*\).*$/\1/'`
-  if [[ -n "$pv" ]]; then
-    echo "Found $package tag $pv corresponding to LArSoft tag $larsoft_version."
-  else
-    echo "Could not find tag for package $package corresponding to LArSoft tag $larsoft_version." 1>&2
-    continue
+# now tag everything else
+for package in "${packages[@]}"; do
+  get_package_release ${package}
+  echo "Found ${package} tag ${pkgver} corresponding to LArSoft tag ${larsoft_version}."
+  cd ${my_working_dir}
+  git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
+  cd ${my_working_dir}/${package}
+  git checkout master
+  have_match=`git diff ${pkgver} | wc -l`
+  if (( ${have_match} > 0 )); then
+    echo "ERROR: master branch is ahead of ${pkgver}"
+    exit 1
   fi
-  ensure_gitconfig $package
-  ptag "${package}" "LARSOFT_SUITE_${larsoft_version}" "${pv}"
-  
-  # larsoftobj packages
-  last_pkg=larsoftobj
-  for package in "${obj_packages[@]}"; do
-    product=`product_for "$package"`
-    pv=`wget --no-check-certificate -q -O - "https://cdcvs.fnal.gov/redmine/projects/${last_pkg}/repository/raw/ups/product_deps?rev=LARSOFT_SUITE_${larsoft_version}" | \
-     grep    -e '^[ 	]*'"$product"'[ 	]\{1,\}' | \
-     sed -e 's/^[ 	]*'"$product"'[ 	]\{1,\}\(v[^ 	]*\).*$/\1/'`
-    if [[ -n "$pv" ]]; then
-      echo "Found $package tag $pv corresponding to LArSoft tag $larsoft_version."
-    else
-      echo "Could not find tag for package $package corresponding to LArSoft tag $larsoft_version." 1>&2
-      continue
-    fi
-    ensure_gitconfig $package
-    ptag "${package}" "LARSOFT_SUITE_${larsoft_version}" "${pv}"
-    last_pkg=${package}
-  done
-
-  last_pkg=larsoftobj
-  for package in "${alg_packages[@]}"; do
-    product=`product_for "$package"`
-    pv=`wget --no-check-certificate -q -O - "https://cdcvs.fnal.gov/redmine/projects/${last_pkg}/repository/raw/ups/product_deps?rev=LARSOFT_SUITE_${larsoft_version}" | \
-     grep    -e '^[ 	]*'"$product"'[ 	]\{1,\}' | \
-     sed -e 's/^[ 	]*'"$product"'[ 	]\{1,\}\(v[^ 	]*\).*$/\1/'`
-    if [[ -n "$pv" ]]; then
-      echo "Found $package tag $pv corresponding to LArSoft tag $larsoft_version."
-    else
-      echo "Could not find tag for package $package corresponding to LArSoft tag $larsoft_version." 1>&2
-      continue
-    fi
-    ensure_gitconfig $package
-    ptag "${package}" "LARSOFT_SUITE_${larsoft_version}" "${pv}"
-    last_pkg=${package}
-  done
-
-
-echo
-echo "These packages have not been tagged: larbatch larutils"
-echo
+  echo "Apply ${suite_tag} to ${package} ${pkgver}"
+  maybe_tag "${suite_tag}"
+done
