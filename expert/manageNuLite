@@ -44,6 +44,33 @@ function commit_ups_product_deps() {
     fi
 }
 
+function maybe_tag() {
+    local myver=$1
+    have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
+    echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    if (( ${have_tag} > 0 )); then
+      if [[ ${REP} == nutools ]]; then
+        echo "merge changes in nutools with develop."
+	git checkout develop  || exit 1
+        git pull  || exit 1
+	git merge -m"nulite ${nulite_version}" release/${tag}
+	git push origin develop || exit 1
+      else
+        echo "tag $myver already exists: doing nothing."
+      fi 
+    else
+      echo "ready to tag ${REP}."
+      git checkout master  || exit 1
+      git pull  || exit 1
+      git merge -m"${REP} ${version} for nulite ${nulite_version}" release/${tag}   || exit 1
+      git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
+      git checkout develop  || exit 1
+      git pull  || exit 1
+      git merge -m"nulite ${nulite_version}" release/${tag}  || exit 1
+      git push origin master develop ${version} || exit 1
+      echo "ready to tag ${REP}."
+    fi
+}
 
 function verify_match() {
     echo "checking nutools and nulite versions"
@@ -60,6 +87,8 @@ function verify_match() {
        exit 1
     fi
 }
+
+################################################################################
 
 # Determine command options (just -h for help)
 while getopts ":h" OPTION
@@ -221,13 +250,7 @@ then
      version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
-     git checkout master  || exit 1
-     git merge -m"${REP} ${version} for nulite ${tag}" release/${tag}   || exit 1
-     git tag -a -m"${REP} ${version} for nulite ${tag}" ${version}  || exit 1
-     git checkout develop  || exit 1
-     git pull  || exit 1
-     git merge -m"nulite ${tag}" release/${tag}  || exit 1
-     git push origin master develop ${version} || exit 1
+     maybe_tag "${version}"
   done
 fi
 
