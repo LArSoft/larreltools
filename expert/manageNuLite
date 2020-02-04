@@ -44,13 +44,16 @@ function commit_ups_product_deps() {
     fi
 }
 
+
 function verify_match() {
     echo "checking nutools and nulite versions"
     nulite_version=`grep nulite ${MRB_SOURCE}/nutools/bundle/CMakeLists.txt | grep create_product_variables | cut -f2 -d"(" | cut -f1 -d")" | tr -s '[:space:]' | sed -e 's/\s*nulite\s*//'`
     echo "found nulite_version ${nulite_version}"
     nutools_version=`grep nutools ${MRB_SOURCE}/nutools/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
     echo "found nutools_version ${nutools_version}"
-    if [[ ${nutools_version} != ${nulite_version} ]]; then
+    if [[ ${nulite_version} =~ ${nutools_version} ]]; then
+       echo "INFO: nulite ${nulite_version} is compatible with nutools ${nutools_version}"
+    else
        echo "ERROR: nutools ${nutools_version} does not match nulite version ${nulite_version}"
        echo "  Please use the following command to update the nulite version"
        echo "    mrb uv nulite ${nutools_version}"
