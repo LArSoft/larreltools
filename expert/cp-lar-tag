@@ -33,8 +33,9 @@ function get_working_dir()
 
 function maybe_tag() {
     local tag=$1
+    local oldtag=$2
     git tag | grep -qe '^'"$tag"'\$' && echo "tag $tag already exists: doing nothing." || \
-      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" && git push origin "${tag}"; }
+      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" "${oldtag}" && git push origin "${tag}"; }
 }
 
 function get_package_release()
@@ -111,13 +112,9 @@ set -x
 git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
 set +x
 cd ${my_working_dir}/${package}
-git checkout master
-have_match=`git diff ${larsoft_version} | wc -l`
-if (( ${have_match} > 0 )); then
-  echo "ERROR: master branch is ahead of ${larsoft_version}"
-  exit 1
-fi
-maybe_tag "${suite_tag}"
+git checkout master || { echo "ERROR: failed to checkout master for ${package}"; exit 1; }
+echo "Apply ${suite_tag} to ${package} ${larsoft_version}"
+maybe_tag "${suite_tag}" "${larsoft_version}"
 
 # now tag everything else
 for package in "${packages[@]}"; do
@@ -126,12 +123,9 @@ for package in "${packages[@]}"; do
   cd ${my_working_dir}
   git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
   cd ${my_working_dir}/${package}
-  git checkout master
-  have_match=`git diff ${pkgver} | wc -l`
-  if (( ${have_match} > 0 )); then
-    echo "ERROR: master branch is ahead of ${pkgver}"
-    exit 1
-  fi
+  git checkout master || { echo "ERROR: failed to checkout master for ${package}"; exit 1; }
   echo "Apply ${suite_tag} to ${package} ${pkgver}"
-  maybe_tag "${suite_tag}"
+  maybe_tag "${suite_tag}" "${pkgver}"
 done
+
+exit 0
