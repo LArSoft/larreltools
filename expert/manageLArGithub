@@ -23,7 +23,6 @@ function usage() {
 
 # commit ups/product_deps if necessary
 function commit_ups_product_deps() {
-    set -x
     have_ups=`git status -s | grep ups/product_deps | wc -l`
     if (( ${have_ups} != 0 )); then
       git commit -m"${REP} ${version} for larsoft ${tag}" ups/product_deps  || exit 1
@@ -35,7 +34,6 @@ function commit_ups_product_deps() {
       git status -s
       exit 1
     fi
-    set +x
 }
 
 function maybe_tag() {
@@ -44,7 +42,6 @@ function maybe_tag() {
     echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
     echo "have_upstream is ${have_upstream}"
-    set -x
     if (( ${have_tag} > 0 )); then
       echo "tag $myver already exists: doing nothing."
     elif (( ${have_upstream} > 0 )); then
@@ -63,11 +60,10 @@ function maybe_tag() {
       echo "ready to tag ${REP}"
       git checkout master  || exit 1
       git pull  || exit 1
-      git merge release/${tag}   || exit 1
+      git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
       git push origin master ${version} || exit 1
     fi
-    set +x
 }
 
 ################################################################################
@@ -208,7 +204,7 @@ then
        git push upstream develop  || { echo "ERROR: git push develop failed"; exit 1; }
      else
        git pull || { echo "ERROR: git pull develop failed"; exit 1; }
-       git merge master  || { echo "ERROR: git merge failed"; exit 1; }
+       git merge -m"larsoft ${tag}" master  || { echo "ERROR: git merge failed"; exit 1; }
        git push origin develop  || { echo "ERROR: git push develop failed"; exit 1; }
      fi
   done
