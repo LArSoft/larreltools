@@ -68,7 +68,6 @@ function maybe_tag() {
       git pull  || exit 1
       git merge -m"nulite ${nulite_version}" release/${tag}  || exit 1
       git push origin master develop ${version} || exit 1
-      echo "ready to tag ${REP}."
     fi
 }
 
