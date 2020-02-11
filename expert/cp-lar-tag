@@ -44,7 +44,8 @@ function get_package_release()
   local pkg=$1
   local pkgmatch="\<${pkg}\>"
   local pkgline=`grep "${pkgmatch}" ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt | grep create_product_variables`
-  pkgver=`echo ${pkgline} | sed -e 's%create_product_variables%%' | sed -e 's%(%%' | sed -e 's%)%%' | sed -e s%${pkg}%%`
+  # The 'xargs echo' on the end trims leading/trailing whitespace
+  pkgver=`echo ${pkgline} | sed -e 's%create_product_variables%%' | sed -e 's%(%%' | sed -e 's%)%%' | sed -e s%${pkg}%% | xargs echo`
   if (( `echo ${pkgver} | wc -w` != 1 )); then
      echo "ERROR: bad match for $pkg in ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt"
      exit 1
