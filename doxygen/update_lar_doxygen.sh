@@ -46,4 +46,5 @@ cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
 
 echo done at `date`
 
+exit 0
 
