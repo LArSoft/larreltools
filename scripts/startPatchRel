@@ -73,16 +73,21 @@ create_working_directory() {
   fi
 }
 
+##################
+# start here
+
 # Determine command options (just -h for help)
-while getopts ":h:e:q:" OPTION
+while getopts :e:q:h OPTION
 do
-    case $OPTION in
-        e   ) experiment="$OPTARG" ;;
+    case ${OPTION} in
+        e   ) experiment="$OPTARG"; echo "found experiment $OPTARG" ;;
 	q   ) basequal="$OPTARG" ;;
         h   ) usage ; exit 0 ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
+shift $(( OPTIND - 1 ))
+OPTIND=1
 
 working_dir=${1}
 newtag=${2}
