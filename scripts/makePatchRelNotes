@@ -38,7 +38,7 @@ function get_package_release()
   fi
   set -x
   cd ${my_working_dir}
-  git clone http://cdcvs.fnal.gov/projects/${pkg} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
+  git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
   git checkout ${pv}
   relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
@@ -56,7 +56,7 @@ function get_util_release()
   local pkg=$1
   set -x
   cd ${my_working_dir}
-  git clone http://cdcvs.fnal.gov/projects/${pkg} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
+  git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag"; exit 1; }
@@ -74,7 +74,7 @@ function find_larsoftobj_release()
 {
   mkdir -p ${my_working_dir}/tmp
   cd ${my_working_dir}/tmp
-  git clone http://cdcvs.fnal.gov/projects/larsoftobj || { echo "ERROR: failed to clone larsoftobj"; exit 1; }
+  git clone ${repository}/larsoftobj${suffix} || { echo "ERROR: failed to clone larsoftobj"; exit 1; }
   cd larsoftobj
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag for larsoftobj"; exit 1; }
@@ -148,6 +148,10 @@ if [[ ${previous_version} == *_rc* ]]; then
   previous_version_string=${previous_version}
 fi
 
+#repository=http://cdcvs.fnal.gov/projects
+repository=https://github.com/LArSoft
+suffix=.git
+
 find_larsoftobj_release
 
 relnote=${my_working_dir}/ReleaseNotes-${larsoft_version}
@@ -179,7 +183,7 @@ echo >> ${relnote}
 set -x
 cd ${my_working_dir}
 pkg=larsoft
-git clone http://cdcvs.fnal.gov/projects/${pkg} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
+git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
 cd ${my_working_dir}/${pkg}
 git checkout ${larsoft_version}
 relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
@@ -209,3 +213,4 @@ get_util_release ${package}
 for package in "${obj_packages[@]}"; do
   get_util_release ${package}
 done
+
