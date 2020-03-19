@@ -15,6 +15,51 @@ function usage() {
     echo "FOR EXPERT USE ONLY"
 }
 
+# commit ups/product_deps if necessary
+function commit_ups_product_deps() {
+    have_ups=`git status -s | grep ups/product_deps | wc -l`
+    if (( ${have_ups} != 0 )); then
+      git commit -m"${REP} ${version} for larsoft ${masterTag}" ups/product_deps  || exit 1
+    fi
+    have_changes=`git status -s | wc -l`
+    if (( ${have_changes} != 0 )); then
+      echo "ERROR: The ${REP} repository contains uncommited changes"
+      echo "       Please commit or otherwise deal with these changes"
+      git status -s
+      exit 1
+    fi
+}
+
+function maybe_tag() {
+    local myver=$1
+    have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
+    echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    have_upstream=`git remote -v | grep upstream | wc -l`
+    echo "have_upstream is ${have_upstream}"
+    if (( ${have_tag} > 0 )); then
+      echo "tag $myver already exists: doing nothing."
+    elif (( ${have_upstream} > 0 )); then
+      echo "working on a fork in ${REP}"
+      git pull upstream ${branch}
+      code_diff=`git diff release/${tag} | wc -l`
+      if (( ${code_diff} > 0 )); then
+	 echo "${REP} upstream does not match working branch - check and fix"
+	 exit 1
+      fi
+      echo "INFO: tag ${REP} ${version} on branch ${branch}"
+      git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
+      git push upstream ${branch} ${version} || exit 1
+    else
+      echo "ready to tag ${REP}"
+      git pull origin ${branch}
+      echo "INFO: tag ${REP} ${version} on branch ${branch}"
+      git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
+      git push origin ${branch} ${version} || exit 1
+    fi
+}
+
+################################################################################
+
 # Determine command options (just -h for help)
 while getopts ":h" OPTION
 do
@@ -66,17 +111,22 @@ do
    fi
 done
 
+larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+if [[ ${larsoft_version} != ${masterTag} ]]; then
+  echo "ERROR: mismatch between ${masterTag} and larsoft version ${larsoft_version}"
+  exit 1
+else
+  echo "found larsoft_version ${larsoft_version}"
+fi
 for REP in $pkglist
 do
   cd ${MRB_SOURCE}/${REP}
+  # make sure we are on the expected branch
   git checkout ${branch}  || exit 1
   version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
-  echo "INFO: commit changes in ups/product_deps"
-  git commit -m"${REP} ${version} for larsoft ${masterTag}" ups/product_deps  || exit 1
-  echo "INFO: tag ${REP} ${version} on branch ${branch}"
-  git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
-  git push origin ${branch}  || exit 1
-  git push origin ${version} || exit 1
+  echo "begin ${REP} ${version}"
+  commit_ups_product_deps
+  maybe_tag "${version}"
 done
 
 exit 0
