@@ -10,11 +10,13 @@ fullCom="${thisComFull%.*}"
 function usage() {
     echo "Usage: $fullCom <start|commit|pr|tag|merge> <tag>"
     echo "Usage: $fullCom update <major|minor|micro>"
+    echo "Usage: $fullCom tagbranch <existing branch> <tag>"
     echo "   start - create release/<tag> branch"
     echo "   update - modify product_deps release as specified"
 #    echo "   commit - commit changes in product_deps and push the fork"
 #    echo "   pr - initiate a pull request"
     echo "   tag - tag the master branch"
+    echo "   tagbranch - tag the specified branch"
     echo "   merge - merge the master branch with develop"
     echo
     echo "FOR EXPERT USE ONLY"
@@ -39,9 +41,9 @@ function commit_ups_product_deps() {
 function maybe_tag() {
     local myver=$1
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
-    echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
-    echo "have_upstream is ${have_upstream}"
+    #echo "have_upstream is ${have_upstream}"
     if (( ${have_tag} > 0 )); then
       echo "tag $myver already exists: doing nothing."
     elif (( ${have_upstream} > 0 )); then
@@ -63,6 +65,33 @@ function maybe_tag() {
       git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
       git push origin master ${version} || exit 1
+    fi
+}
+
+function maybe_tag_branch() {
+    local mybranch=$1
+    local myver=$2
+    have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
+    #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    have_upstream=`git remote -v | grep upstream | wc -l`
+    #echo "have_upstream is ${have_upstream}"
+    this_branch=`git status | grep "On branch" | cut -f 3 -d" "`
+    #echo "on branch ${this_branch}"
+    if (( ${have_tag} > 0 )); then
+      echo "tag $myver already exists: doing nothing."
+    elif (( ${have_upstream} > 0 )); then
+      echo "working on a fork in ${REP}"
+      echo "This should not happen if when tagging a branch - check and fix"
+      exit 1
+    elif [[ "${this_branch}" != "${mybranch}" ]]; then
+      echo "ERROR: on branch ${this_branch}"
+      echo "       expect to be on branch ${mybranch}"
+      exit 1
+    else
+      echo "ready to tag ${REP} on branch ${mybranch}"
+      git pull  || exit 1
+      git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
+      git push origin ${mybranch} ${version} || exit 1
     fi
 }
 
@@ -94,6 +123,7 @@ case $flow in
 #    commit ) ;;
 #    pr ) ;;
     tag ) ;;
+    tagbranch ) tagbranch=${2}; tag=${3} ;;
     merge ) ;;
     *   ) echo "ERROR: Unknown option $flow" ; usage ; exit 1 ;;
 esac
@@ -186,6 +216,27 @@ then
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      maybe_tag "${version}"
+  done
+fi
+
+if [ "${flow}" = "tagbranch" ]
+then
+  if [ -z "${tagbranch}" ]; then
+    echo 'ERROR: no existing branch specified'
+    usage
+    exit 1
+  fi
+  larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+  echo "found larsoft_version ${larsoft_version} for ${tag} on ${tagbranch}"
+  for REP in $pkglist
+  do
+     cd ${MRB_SOURCE}/${REP}
+     # make sure we are on the expected branch
+     git checkout ${tagbranch}  || exit 1
+     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     echo "begin ${REP} ${version}"
+     commit_ups_product_deps
+     maybe_tag_branch "${tagbranch}" "${version}"
   done
 fi
 
