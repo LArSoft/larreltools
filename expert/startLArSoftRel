@@ -53,6 +53,8 @@ create_working_directory() {
   mrb g --repo-type github larutils
   echo "checkout larpandoracontent"
   mrb g --repo-type github larpandoracontent
+  echo "checkout webevd"
+  mrb g --repo-type github webevd
   # look for extra options 
   if [ -z "${extra_options}" ]; then
     echo "checkout dunetpc"
