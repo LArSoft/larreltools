@@ -8,6 +8,10 @@
 # clone larsoft and use releaseDB/CMakeLists.txt
 #
 ########################################################################
+# hint: You have created a nested tag. The object referred to by your new tag is
+# hint: already a tag. If you meant to tag the object that it points to, use:
+# hint: 	git tag -f LARSOFT_SUITE_v08_50_02 v1_25_09^{}
+########################################################################
 
 # Subsidiary packages to be checked.
 declare -a packages=(larana larreco larrecodnn larsim larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj larbatch larutils)
@@ -35,7 +39,7 @@ function maybe_tag() {
     local tag=$1
     local oldtag=$2
     git tag | grep -qe '^'"$tag"'\$' && echo "tag $tag already exists: doing nothing." || \
-      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" "${oldtag}" && git push origin "${tag}"; }
+      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" "${oldtag}^{}" && git push origin "${tag}"; }
 }
 
 function get_package_release()
