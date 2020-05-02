@@ -53,8 +53,9 @@ create_working_directory() {
   mrb g --repo-type github larutils
   echo "checkout larpandoracontent"
   mrb g --repo-type github larpandoracontent
+  # the github orginization for webevd is defined in mrb v4_00_02 or later
   echo "checkout webevd"
-  mrb g --repo-type github webevd
+  mrb g --github-org LArSoft --repo-type github webevd
   # look for extra options 
   if [ -z "${extra_options}" ]; then
     echo "checkout dunetpc"
