@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# cp-lar-tag
+# cp-patch-tag
 #
 # LArSoft-specific cross-package tagger.
 # This variation is just for patch releases.  
@@ -12,7 +12,7 @@
 ########################################################################
 
 # Subsidiary packages to be checked.
-declare -a packages=(larana larreco larsim larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj)
+declare -a packages=(larana larreco larsim larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj webevd larpandoracontent)
 
 # Tag message.
 tag_msg='LArSoft suite cross-package tag'
@@ -62,7 +62,7 @@ prog=${0##*/}
 function usage() {
     cat 1>&2 <<EOF
 ${prog} --help|-h|-\?
-${prog} <working_directory> <tag>
+${prog} <working_directory> <existing branch> <tag>
 EOF
 }
 
@@ -98,7 +98,8 @@ done
 [[ -z "$2" ]] && { echo "Require existing LArSoft tag as non-option argument" 1>&2; usage; exit 1; }
 
 working_dir=$1
-larsoft_version=$2
+patch_branch=$2
+larsoft_version=$3
 
 # create ${working_dir}/${larsoft_version}
 get_working_dir
@@ -115,7 +116,7 @@ set -x
 git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
 set +x
 cd ${my_working_dir}/${package}
-git checkout master || { echo "ERROR: failed to checkout master for ${package}"; exit 1; }
+git checkout ${patch_branch} || { echo "ERROR: failed to checkout ${patch_branch} for ${package}"; exit 1; }
 echo "Apply ${suite_tag} to ${package} ${larsoft_version}"
 maybe_tag "${suite_tag}" "${larsoft_version}"
 
@@ -126,7 +127,7 @@ for package in "${packages[@]}"; do
   cd ${my_working_dir}
   git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
   cd ${my_working_dir}/${package}
-  git checkout master || { echo "ERROR: failed to checkout master for ${package}"; exit 1; }
+  git checkout ${patch_branch} || { echo "ERROR: failed to checkout ${patch_branch} for ${package}"; exit 1; }
   echo "Apply ${suite_tag} to ${package} ${pkgver}"
   maybe_tag "${suite_tag}" "${pkgver}"
 done
