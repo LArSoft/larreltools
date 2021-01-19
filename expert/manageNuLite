@@ -239,8 +239,8 @@ fi
 
 if [ "${flow}" = "tag" ]
 then
-  echo "calling verify_match"
-  verify_match
+  ##echo "calling verify_match"
+  ##verify_match
   for REP in $pkglist
   do
      cd ${MRB_SOURCE}/${REP}
