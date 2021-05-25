@@ -33,18 +33,15 @@ create_working_directory() {
   fi
   mkdir -p ${working_dir}/${tag} || { echo "ERROR: failed to create ${working_dir}/${tag}"; exit 1; }
   mkdir -p ${working_dir}/${tag}/e20p  ${working_dir}/${tag}/e20d || { echo "ERROR: failed to create ${working_dir}/${tag}/e20p"; exit 1; }
-  mkdir -p ${working_dir}/${tag}/e19p  ${working_dir}/${tag}/e19d || { echo "ERROR: failed to create ${working_dir}/${tag}/e19p"; exit 1; }
   mkdir -p ${working_dir}/${tag}/c7p  ${working_dir}/${tag}/c7d || { echo "ERROR: failed to create ${working_dir}/${tag}/c7p"; exit 1; }
   cd ${working_dir}/${tag}
   echo "run mrb newDev"
   mrb newDev -f -v ${tag} -q e20:prof -T e20p || exit 1
   mrb newDev -f -v ${tag} -q e20:debug -T e20d || exit 1
-  mrb newDev -f -v ${tag} -q e19:prof -T e19p || exit 1
-  mrb newDev -f -v ${tag} -q e19:debug -T e19d || exit 1
   mrb newDev -f -v ${tag} -q c7:prof -T c7p || exit 1
   mrb newDev -f -v ${tag} -q c7:debug -T c7d || exit 1
   echo "source localProductsXXX/setup"
-  source e19p/localProducts*/setup
+  source e20p/localProducts*/setup
   cd $MRB_SOURCE
   echo "checkout larsoft_suite"
   mrb g --repo-type github larsoft_suite
