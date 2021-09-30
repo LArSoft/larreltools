@@ -209,14 +209,16 @@ fi
 
 if [ "${flow}" = "tag" ]
 then
-  larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+  #larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+  larsoft_version=v`grep larsoft CMakeLists.txt | grep project | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
   echo "found larsoft_version ${larsoft_version}"
   for REP in $pkglist
   do
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout release/${tag}  || exit 1
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+  ##   version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     version=v`grep ${REP} CMakeLists.txt | grep project | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      maybe_tag "${version}"
