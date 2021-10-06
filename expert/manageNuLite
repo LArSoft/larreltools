@@ -35,6 +35,10 @@ function commit_ups_product_deps() {
     if (( ${have_ups} != 0 )); then
       git commit -m"${REP} ${version} for nulite ${tag}" ups/product_deps  || exit 1
     fi
+    have_cmake=`git status -s | grep CMakeLists.txt | wc -l`
+    if (( ${have_cmake} != 0 )); then
+      git commit -m"${REP} ${version} for nulite ${tag}" CMakeLists.txt  || exit 1
+    fi
     have_changes=`git status -s | wc -l`
     if (( ${have_changes} != 0 )); then
       echo "ERROR: The ${REP} repository contains uncommited changes"
@@ -60,14 +64,14 @@ function maybe_tag() {
       fi 
     else
       echo "ready to tag ${REP}."
-      git checkout master  || exit 1
+      git checkout main  || exit 1
       git pull  || exit 1
       git merge -m"${REP} ${version} for nulite ${nulite_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
       git checkout develop  || exit 1
       git pull  || exit 1
       git merge -m"nulite ${nulite_version}" release/${tag}  || exit 1
-      git push origin master develop ${version} || exit 1
+      git push origin main develop ${version} || exit 1
     fi
 }
 
