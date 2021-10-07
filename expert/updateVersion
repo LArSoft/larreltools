@@ -23,9 +23,7 @@ function usage()
 # increment the major version
 function calculateMajorUpdate()
 {
-  local input=$1
-  local package=$2
-  local version=$3
+  local version=$1
   newversion=empty
   oldmajor=`echo $version | cut -f1 -d"_" | sed -e 's/^v//' | sed -e 's/^0//'`
   minor=`echo $version | cut -f2 -d"_"`
@@ -44,9 +42,7 @@ function calculateMajorUpdate()
 # increment the minor version
 function calculateMinorUpdate()
 {
-  local input=$1
-  local package=$2
-  local version=$3
+  local version=$1
   newversion=empty
   major=`echo $version | cut -f1 -d"_"`
   oldminor=`echo $version | cut -f2 -d"_" | sed -e 's/^0//'`
@@ -65,9 +61,7 @@ function calculateMinorUpdate()
 # increment the micro version
 function calculateMicroUpdate()
 {
-  local input=$1
-  local package=$2
-  local version=$3
+  local version=$1
   newversion=empty
   major=`echo $version | cut -f1 -d"_"`
   minor=`echo $version | cut -f2 -d"_"`
@@ -81,6 +75,22 @@ function calculateMicroUpdate()
   else
      newversion="${major}_${minor}_${newmicro}"
   fi
+}
+
+function get_version()
+{
+  local package=$1
+  ##echo "checking package ${package}"
+  oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${oldversion} == v ]]; then
+    oldversion=`grep '^[  ]*parent' ${REP}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${oldversion} == vVERSION ]]; then
+    oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  ##echo "Found ${package} ${oldversion}"
 }
 
 #########################################################
@@ -141,15 +151,18 @@ done
 for REP in $pkglist
 do
    echo
-   parentline=`grep ^parent ${REP}/ups/product_deps`
+   ##parentline=`grep ^parent ${REP}/ups/product_deps`
    ##echo ${parentline}
-   oldversion=`echo ${parentline} | cut -f3 -d" "`
+   ##oldversion=`echo ${parentline} | cut -f3 -d" "`
+   oldversion=empty
+   get_version ${REP}
+   ##echo "ready to calculate new version for ${REP} ${oldversion}"
    if [[ ${type} == major ]]; then
-     calculateMajorUpdate ${parentline}
+     calculateMajorUpdate ${oldversion}
    elif [[ ${type} == minor ]]; then
-     calculateMinorUpdate ${parentline}
+     calculateMinorUpdate ${oldversion}
    elif [[ ${type} == micro ]]; then
-     calculateMicroUpdate ${parentline}
+     calculateMicroUpdate ${oldversion}
    fi
    echo "updating ${REP} from ${oldversion} to ${newversion}"
    if [[ ${dry_run} == "true" ]]; then
