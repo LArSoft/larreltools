@@ -99,6 +99,23 @@ function maybe_tag_branch() {
     fi
 }
 
+function get_version()
+{
+  local package=$1
+  version=empty
+  ##echo "checking package ${package}"
+  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${version} == v ]]; then
+    version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${version} == vVERSION ]]; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  ##echo "Found ${package} ${version}"
+}
+
 ################################################################################
 
 # Determine command options (just -h for help)
@@ -209,16 +226,15 @@ fi
 
 if [ "${flow}" = "tag" ]
 then
-  #larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
-  larsoft_version=v`grep larsoft CMakeLists.txt | grep project | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  get_version larsoft
+  larsoft_version=${version}
   echo "found larsoft_version ${larsoft_version}"
   for REP in $pkglist
   do
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout release/${tag}  || exit 1
-  ##   version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
-     version=v`grep ${REP} CMakeLists.txt | grep project | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+     get_version ${REP} 
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      maybe_tag "${version}"
@@ -232,14 +248,15 @@ then
     usage
     exit 1
   fi
-  larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+  get_version larsoft
+  larsoft_version=${version}
   echo "found larsoft_version ${larsoft_version} for ${tag} on ${tagbranch}"
   for REP in $pkglist
   do
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout ${tagbranch}  || exit 1
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     get_version ${REP} 
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      maybe_tag_branch "${tagbranch}" "${version}"
@@ -281,7 +298,7 @@ then
      # check status
      modified_files=`git status | grep modified | wc -l`
      new_product_deps=`git status | grep product_deps | wc -l`
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     get_version ${REP} 
      if (( ${modified_files} == 0 )); then
        echo "nothing to commit in ${REP}"
      elif (( ${modified_files} == 1 )); then
@@ -316,7 +333,7 @@ then
        echo "please commit changes in ${REP}"
        exit 1
      fi
-     version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+     get_version ${REP} 
      pr_name=`hub pull-request -m\"${REP} ${version} for larsoft ${tag}\"`
      okflow=$?
      if [ ! ${okflow} ]
