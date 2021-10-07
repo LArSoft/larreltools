@@ -24,6 +24,23 @@ function get_working_dir()
     my_working_dir=`cd ${working_dir}/${larsoft_version} && /bin/pwd ${pwd_P_arg}`
 }
 
+function get_version()
+{
+  local package=$1
+  echo "checking package ${package}"
+  relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${relver} == v ]]; then
+    relver=`grep '^[  ]*parent' ${my_working_dir}/${package}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${relver} == vVERSION ]]; then
+    relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  echo "Found ${package} version ${relver}"
+}
+
+
 function get_package_release()
 {
   local pkg=$1
@@ -42,8 +59,7 @@ function get_package_release()
   git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
   git checkout ${pv}
-  #relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
-  relver=v`grep '^[  ]*project' ${my_working_dir}/${pkg}/CMakeLists.txt | grep ${pkg} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  get_version ${pkg}
   echo "Found ${pkg} ${relver}"
   echo >> ${relnote}
   echo "h2. ${pkg} ${relver}" >> ${relnote}
@@ -63,16 +79,7 @@ function get_util_release()
   cd ${my_working_dir}/${pkg}
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag"; exit 1; }
-  #relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
-  relver=v`grep '^[  ]*project' ${my_working_dir}/${pkg}/CMakeLists.txt | grep ${pkg} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
-  # possible old style package
-  if [[ ${relver} == v ]]; then
-  relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
-  fi
-  # dealing with larpandoracontent
-  if [[ ${relver} == vVERSION ]]; then
-  relver=v`grep '^[  ]*project' ${my_working_dir}/${pkg}/CMakeLists.txt | grep ${pkg} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
-  fi
+  get_version ${pkg}
   echo "Found ${pkg} ${relver}"
   echo >> ${relnote}
   echo "h2. ${pkg} ${relver}" >> ${relnote}
@@ -91,8 +98,12 @@ function find_larsoftobj_release()
   cd larsoftobj
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag for larsoftobj"; exit 1; }
-  #larsoftobj_version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
-  larsoftobj_version=v`grep larsoftobj CMakeLists.txt | grep project | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # special case
+  larsoftobj_version=v`grep '^[  ]*project' CMakeLists.txt | grep larsoftobj | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${larsoftobj_version} == v ]]; then
+    larsoftobj_version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
   echo "found larsoftobj_version ${larsoftobj_version}"
   if [[ -n "$larsoftobj_version" ]]; then
     echo "INFO: Found larsoftobj $larsoftobj_version corresponding to LArSoft tag $larsoft_version."
