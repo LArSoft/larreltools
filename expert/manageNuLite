@@ -91,6 +91,19 @@ function verify_match() {
     fi
 }
 
+function get_version()
+{
+  local package=$1
+  version=empty
+  ##echo "checking package ${package}"
+  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${version} == v ]]; then
+    version=`grep '^[  ]*parent' ups/product_deps | grep ${package} | tr "\t" " " | cut -f3 -d" "`
+  fi
+  ##echo "Found ${package} ${version}"
+}
+
 ################################################################################
 
 # Determine command options (just -h for help)
@@ -250,7 +263,8 @@ then
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout release/${tag}  || exit 1
-     version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+     ##version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+     get_version ${REP}
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      maybe_tag "${version}"
@@ -265,7 +279,8 @@ then
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
      git checkout ${branch}  || exit 1
-     version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+     ##version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+     get_version ${REP}
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
      git tag -a -m"${REP} ${version} for nulite ${tag}" ${version}  || exit 1
