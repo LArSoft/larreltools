@@ -3,10 +3,77 @@
 # patch releases are vaa_bb_cc_dd
 # This script will increment dd by one
 
+# Usage function
+function usage()
+{
+    echo "Usage: $fullCom [-d|-h]"
+    echo "  Increase patch release number by one"
+    echo
+    echo " options:"
+    echo "   -h - this help"
+    echo "   -d - dry run, no changes will be made"
+    echo
+    echo "  Release numbers are read first from the top level CMakeLists.txt"
+    echo "    and then from \$MRB_SOURCE/*/ups/product_deps there is no match"
+}
+
+function calculatePatchUpdate()
+{
+  local version=$1
+  newversion=empty
+  major=`echo $version | cut -f1 -d"_"`
+  minor=`echo $version | cut -f2 -d"_"`
+  micro=`echo $version | cut -f3 -d"_"`
+  ##echo "version length is ${#version}"
+  if (( ${#version} > 9 )); then
+    oldpatch=`echo $version | cut -f4 -d"_" | sed -e 's/^0//'`
+  else
+    oldpatch=0
+  fi
+  newpatch=$(($oldpatch+1))
+  ##echo "updating $input $package $version"
+  ##echo "  $major $minor $micro $patch ${newpatch}"
+  patchlen=${#newpatch}
+  if [[ ${patchlen} == 1 ]]; then
+     newversion="${major}_${minor}_${micro}_0${newpatch}"
+  else
+     newversion="${major}_${minor}_${micro}_${newpatch}"
+  fi
+}
+
+function get_version()
+{
+  local package=$1
+  ##echo "checking package ${package}"
+  oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${oldversion} == v ]]; then
+    oldversion=`grep '^[  ]*parent' ${REP}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${oldversion} == vVERSION ]]; then
+    oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  ##echo "Found ${package} ${oldversion}"
+}
+
+
 # Determine this command name
 thisComFull=$(basename $0)
 thisDirFull=$(dirname $0)
 fullCom="${thisComFull%.*}"
+
+# Determine command options (just -h for help)
+while getopts ":dh" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        d   ) dry_run=true ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+shift `expr $OPTIND - 1`
+OPTIND=1
 
 if [ -z "${MRB_SOURCE}" ]
 then
@@ -36,12 +103,21 @@ done
 
 for REP in $pkglist
 do
-   parentline=`grep ^parent ${REP}/ups/product_deps`
-   echo ${parentline}
-   newversion=`${thisDirFull}/calculatePatchUpdate ${parentline}`
-   mystatus=$?
-   if (( $mystatus != 0 )); then exit 1; fi
-   echo
-   echo "updating ${REP} to ${newversion}"
-   mrb uv ${REP} ${newversion}
+   #parentline=`grep ^parent ${REP}/ups/product_deps`
+   #echo ${parentline}
+   oldversion=empty
+   get_version ${REP}
+   calculatePatchUpdate ${oldversion}
+   #newversion=`${thisDirFull}/calculatePatchUpdate ${parentline}`
+   #mystatus=$?
+   #if (( $mystatus != 0 )); then exit 1; fi
+   #echo
+   #echo "updating ${REP} to ${newversion}"
+   #mrb uv ${REP} ${newversion}
+   echo "updating ${REP} from ${oldversion} to ${newversion}"
+   if [[ ${dry_run} == "true" ]]; then
+     echo "dry run - no change"
+   else
+     mrb uv ${REP} ${newversion}
+   fi
 done
