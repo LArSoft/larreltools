@@ -15,9 +15,9 @@ function usage() {
     echo "   update - modify product_deps release as specified"
 #    echo "   commit - commit changes in product_deps and push the fork"
 #    echo "   pr - initiate a pull request"
-    echo "   tag - tag the master branch"
+    echo "   tag - tag the main branch branch"
     echo "   tagbranch - tag the specified branch"
-    echo "   merge - merge the master branch with develop"
+    echo "   merge - merge the main branch branch with develop"
     echo
     echo "FOR EXPERT USE ONLY"
 
@@ -48,27 +48,32 @@ function maybe_tag() {
     #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
     #echo "have_upstream is ${have_upstream}"
+    main_branch=master
+    have_main=`git branch -a | grep main | wc -l`
+    if (( ${have_main} != 0 )); then 
+      main_branch=main
+    fi
     if (( ${have_tag} > 0 )); then
       echo "tag $myver already exists: doing nothing."
     elif (( ${have_upstream} > 0 )); then
       echo "working on a fork in ${REP}"
-      git checkout master
-      git pull upstream master
+      git checkout ${main_branch}
+      git pull upstream ${main_branch}
       code_diff=`git diff release/${tag} | wc -l`
       if (( ${code_diff} > 0 )); then
-	 echo "${REP} master does not match release/${tag} - check and fix"
+	 echo "${REP} ${main_branch} does not match release/${tag} - check and fix"
 	 exit 1
       fi
       git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
-      git push upstream master ${version} || exit 1
+      git push upstream ${main_branch} ${version} || exit 1
     else
       echo "ready to tag ${REP}"
-      git checkout master  || exit 1
+      git checkout ${main_branch}  || exit 1
       git pull  || exit 1
       git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
-      git push origin master ${version} || exit 1
+      git push origin ${main_branch} ${version} || exit 1
     fi
 }
 
@@ -271,14 +276,19 @@ then
      echo "begin ${REP}"
      have_upstream=`git remote -v | grep upstream | wc -l`
      echo "have_upstream is ${have_upstream}"
+     main_branch=master
+     have_main=`git branch -a | grep main | wc -l`
+     if (( ${have_main} != 0 )); then 
+       main_branch=main
+     fi
      git checkout develop  || { echo "ERROR: git checkout develop failed"; exit 1; }
      if (( ${have_upstream} > 0 )); then
        git pull upstream develop || { echo "ERROR: git pull develop failed"; exit 1; }
-       git merge -m"larsoft ${tag}" master  || { echo "ERROR: git merge failed"; exit 1; }
+       git merge -m"larsoft ${tag}" ${main_branch}  || { echo "ERROR: git merge failed"; exit 1; }
        git push upstream develop  || { echo "ERROR: git push develop failed"; exit 1; }
      else
        git pull || { echo "ERROR: git pull develop failed"; exit 1; }
-       git merge -m"larsoft ${tag}" master  || { echo "ERROR: git merge failed"; exit 1; }
+       git merge -m"larsoft ${tag}" ${main_branch}  || { echo "ERROR: git merge failed"; exit 1; }
        git push origin develop  || { echo "ERROR: git push develop failed"; exit 1; }
      fi
   done

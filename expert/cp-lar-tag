@@ -14,7 +14,7 @@
 ########################################################################
 
 # Subsidiary packages to be checked.
-declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj larbatch larutils webevd)
+declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj larvecutils lardataobj lardataalg larcorealg larcoreobj larbatch larutils webevd)
 
 # Tag message.
 tag_msg='LArSoft suite cross-package tag'
@@ -128,7 +128,12 @@ for package in "${packages[@]}"; do
   cd ${my_working_dir}
   git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
   cd ${my_working_dir}/${package}
-  git checkout master || { echo "ERROR: failed to checkout master for ${package}"; exit 1; }
+  main_branch=master
+  have_main=`git branch -a | grep main | wc -l`
+  if (( ${have_main} != 0 )); then 
+    main_branch=main
+  fi
+  git checkout ${main_branch} || { echo "ERROR: failed to checkout ${main_branch} for ${package}"; exit 1; }
   echo "Apply ${suite_tag} to ${package} ${pkgver}"
   maybe_tag "${suite_tag}" "${pkgver}"
 done
