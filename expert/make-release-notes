@@ -58,14 +58,20 @@ function get_package_release()
   cd ${my_working_dir}
   git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
+  git checkout ${previous_version_string}
+  get_version ${pkg}
+  prever=${relver}
   git checkout ${pv}
   get_version ${pkg}
-  echo "Found ${pkg} ${relver}"
+  echo "Found ${pkg} ${relver} ${prever}"
   echo >> ${relnote}
   echo "h2. ${pkg} ${relver}" >> ${relnote}
   echo >> ${relnote}
-  git log --pretty=format:"* %ad  %an : %s" --date=short ${previous_version_string}..${relver} >> ${relnote}
+  if [[ ${prever} != ${relver} ]]; then
+#  git log --pretty=format:"* %ad  %an : %s" --date=short ${previous_version_string}..${relver} >> ${relnote}
+  echo "   \"changes since ${prever}\":${repository}/${pkg}/compare/${prever}...${relver}" >> ${relnote}
   echo >> ${relnote}
+  fi
   cd ${my_working_dir}
   set +x
 }
