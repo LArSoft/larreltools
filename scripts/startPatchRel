@@ -8,7 +8,7 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <working_dir> [-e <experiment>] [-q <base qualifier>] <new patch tag> <larsoft branch> [<experiment branch>]"
+    echo "Usage: $fullCom [-e <experiment>] [-q <base qualifier>] <working_dir> <new patch tag> <larsoft branch> [<experiment branch>]"
     echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout code"
     echo "  options:"
     echo "   -q <base qualifier>: create subdirectories the specified qualifier"
