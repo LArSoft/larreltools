@@ -14,6 +14,8 @@ function usage() {
     echo "   -q <base qualifier>: create subdirectories the specified qualifier"
     echo "      If the base qualifier (e17, e19, e20, c2, c7, etc.) is not specified,"
     echo "        create subdirectories for e20"
+    echo "      To use more than one qualifier (e.g., c7 and 20), "
+    echo "        repeat the command with another qualifier."
     echo "   -e <experiment>: checkout larsoft and experiment code"
     echo "      experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
     echo "      If no experiment is specified, only checkout larsoft."
