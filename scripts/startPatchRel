@@ -6,6 +6,8 @@
 thisComFull=$(basename $0)
 fullCom="${thisComFull%.*}"
 
+declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoft larsoftobj lardataobj lardataalg larcorealg larcoreobj webevd larpandoracontent larvecutils)
+
 # Usage function
 function usage() {
     echo "Usage: $fullCom [-e <experiment>] [-q <base qualifier>] <working_dir> <new patch tag> <larsoft branch> [<experiment branch>]"
@@ -19,7 +21,7 @@ function usage() {
     echo "   -e <experiment>: checkout larsoft and experiment code"
     echo "      experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
     echo "      If no experiment is specified, only checkout larsoft."
-    echo "   -d - dry run, no changes will be made"
+    echo "   -d - very simple dry run, no changes will be made"
     echo
     echo "FOR EXPERT USE ONLY"
 
@@ -31,7 +33,8 @@ create_working_directory() {
       echo 'INFO:  ${working_dir}/${newtag} already exists!'
       echo 'INFO:  adding build directories for ${basequal}'
   else
-      mkdir -p ${working_dir}/${newtag} || { echo "ERROR: failed to create ${working_dir}/${newtag}"; exit 1; }
+      mkdir -p ${working_dir}/${newtag} || \
+         { echo "ERROR: failed to create ${working_dir}/${newtag}"; exit 1; }
   fi
   mkdir -p ${working_dir}/${newtag}/${basequal}p  ${working_dir}/${newtag}/${basequal}d || \
     { echo "ERROR: failed to create ${working_dir}/${newtag}/${basequal}p"; exit 1; }
@@ -42,10 +45,17 @@ create_working_directory() {
   echo "source localProductsXXX/setup"
   source ${basequal}p/localProducts*/setup
   cd $MRB_SOURCE
-  echo "checkout larsoft_suite"
-  mrb g -b ${larbranch} larsoft_suite
-  echo "checkout larsoftobj_suite"
-  mrb g -b ${larbranch} larsoftobj_suite
+  echo "checkout larsoft packages"
+  for package in "${packages[@]}"; do
+    if [ ! -d ${package} ]; then
+      mrb g -b ${larbranch} ${package} || \
+         { echo "ERROR: failed to clone ${package}"; rm -rf ${package}; }
+   fi
+  done
+  mrb uc
+  #mrb g -b ${larbranch} larsoft_suite
+  #echo "checkout larsoftobj_suite"
+  #mrb g -b ${larbranch} larsoftobj_suite
   # now get the appropriate experiment code
   if [[ ${experiment} == "argoneut" ]]; then
     echo "checkout argoneutcode"
