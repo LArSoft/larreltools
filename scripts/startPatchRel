@@ -12,11 +12,12 @@ function usage() {
     echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout code"
     echo "  options:"
     echo "   -q <base qualifier>: create subdirectories the specified qualifier"
-    echo "      If the base qualifier (e17, e19, c2, c7, etc.) is not specified,"
-    echo "        create subdirectories for e17"
+    echo "      If the base qualifier (e17, e19, e20, c2, c7, etc.) is not specified,"
+    echo "        create subdirectories for e20"
     echo "   -e <experiment>: checkout larsoft and experiment code"
     echo "      experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
     echo "      If no experiment is specified, only checkout larsoft."
+    echo "   -d - dry run, no changes will be made"
     echo
     echo "FOR EXPERT USE ONLY"
 
@@ -77,11 +78,12 @@ create_working_directory() {
 # start here
 
 # Determine command options (just -h for help)
-while getopts :e:q:h OPTION
+while getopts :e:q:dh OPTION
 do
     case ${OPTION} in
         e   ) experiment="$OPTARG"; echo "found experiment $OPTARG" ;;
 	q   ) basequal="$OPTARG" ;;
+        d   ) dry_run=true ;;
         h   ) usage ; exit 0 ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
@@ -146,10 +148,17 @@ then
 fi
 if [ -z "${basequal}" ]
 then
-    echo 'INFO: no base qualifier specified, will use e17'
-    basequal=e17
+    echo 'INFO: no base qualifier specified, will use e20'
+    basequal=e20
 fi
-
+if [[ ${dry_run} == "true" ]]; then
+  echo "DRY RUN: working_dir is ${working_dir}"
+  echo "DRY RUN: newtag is ${newtag}"
+  echo "DRY RUN: larbranch is ${larbranch}"
+  echo "DRY RUN: expbranch is ${expbranch}"
+  echo "DRY RUN: basequal is ${basequal}"
+else
   create_working_directory 
+fi
   exit 0
 
