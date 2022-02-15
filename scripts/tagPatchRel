@@ -21,6 +21,10 @@ function commit_ups_product_deps() {
     if (( ${have_ups} != 0 )); then
       git commit -m"${REP} ${version} for larsoft ${masterTag}" ups/product_deps  || exit 1
     fi
+    have_cmake=`git status -s | grep CMakeLists.txt | wc -l`
+    if (( ${have_cmake} != 0 )); then
+      git commit -m"${REP} ${version} for larsoft ${masterTag}" CMakeLists.txt  || exit 1
+    fi
     have_changes=`git status -s | wc -l`
     if (( ${have_changes} != 0 )); then
       echo "ERROR: The ${REP} repository contains uncommited changes"
@@ -33,9 +37,11 @@ function commit_ups_product_deps() {
 function maybe_tag() {
     local myver=$1
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
-    echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
-    echo "have_upstream is ${have_upstream}"
+    #echo "have_upstream is ${have_upstream}"
+    this_branch=`git status | grep "On branch" | cut -f 3 -d" "`
+    #echo "on branch ${this_branch}"
     if (( ${have_tag} > 0 )); then
       echo "tag $myver already exists: doing nothing."
     elif (( ${have_upstream} > 0 )); then
@@ -49,14 +55,36 @@ function maybe_tag() {
       echo "INFO: tag ${REP} ${version} on branch ${branch}"
       git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
       git push upstream ${branch} ${version} || exit 1
+    elif [[ "${this_branch}" != "${branch}" ]]; then
+      echo "ERROR: on branch ${this_branch}"
+      echo "       expect to be on branch ${branch}"
+      exit 1
     else
-      echo "ready to tag ${REP}"
+      #echo "ready to tag ${REP} on branch ${branch}"
       git pull origin ${branch}
       echo "INFO: tag ${REP} ${version} on branch ${branch}"
       git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
       git push origin ${branch} ${version} || exit 1
     fi
 }
+
+function get_version()
+{
+  local package=$1
+  version=empty
+  ##echo "checking package ${package}"
+  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${version} == v ]]; then
+    version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${version} == vVERSION ]]; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  ##echo "Found ${package} ${version}"
+}
+
 
 ################################################################################
 
@@ -111,7 +139,7 @@ do
    fi
 done
 
-larsoft_version=`grep larsoft ${MRB_SOURCE}/larsoft/ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
+get_version larsoft
 if [[ ${larsoft_version} != ${masterTag} ]]; then
   echo "ERROR: mismatch between ${masterTag} and larsoft version ${larsoft_version}"
   exit 1
@@ -123,7 +151,7 @@ do
   cd ${MRB_SOURCE}/${REP}
   # make sure we are on the expected branch
   git checkout ${branch}  || exit 1
-  version=`grep ${REP} ups/product_deps | grep parent | sed -e 's/[[:space:]]/ /g' | cut -f3 -d " "`
+  get_version ${REP} 
   echo "begin ${REP} ${version}"
   commit_ups_product_deps
   maybe_tag "${version}"
