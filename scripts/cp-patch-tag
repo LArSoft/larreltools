@@ -12,7 +12,7 @@
 ########################################################################
 
 # Subsidiary packages to be checked.
-declare -a packages=(larana larreco larsim larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoftobj lardataobj lardataalg larcorealg larcoreobj webevd larpandoracontent)
+declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj larvecutils lardataobj lardataalg larcorealg larcoreobj webevd)
 
 # Tag message.
 tag_msg='LArSoft suite cross-package tag'
@@ -37,7 +37,7 @@ function maybe_tag() {
     local tag=$1
     local oldtag=$2
     git tag | grep -qe '^'"$tag"'\$' && echo "tag $tag already exists: doing nothing." || \
-      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" "${oldtag}" && git push origin "${tag}"; }
+      { echo "applying tag $tag."; git tag -a -m'$tag_msg' "${tag}" "${oldtag}^{}" && git push origin "${tag}"; }
 }
 
 function get_package_release()
@@ -49,8 +49,9 @@ function get_package_release()
   # The 'xargs echo' on the end trims leading/trailing whitespace
   pkgver=`echo ${pkgline} | sed -e 's%create_product_variables%%' | sed -e 's%(%%' | sed -e 's%)%%' | sed -e s%${pkg}%% | xargs echo`
   if (( `echo ${pkgver} | wc -w` != 1 )); then
-     echo "ERROR: bad match for $pkg in ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt"
-     exit 1
+     echo "INFO: bad match for $pkg in ${my_working_dir}/larsoft/releaseDB/CMakeLists.txt"
+     echo "      will skip $pkg"
+     pkgver=0
   fi
   ##echo "Found $pkg tag $pkgver corresponding to LArSoft tag $larsoft_version."
 }
@@ -123,13 +124,19 @@ maybe_tag "${suite_tag}" "${larsoft_version}"
 # now tag everything else
 for package in "${packages[@]}"; do
   get_package_release ${package}
+  if [[ ${pkgver} != 0 ]]; then
   echo "Found ${package} tag ${pkgver} corresponding to LArSoft tag ${larsoft_version}."
   cd ${my_working_dir}
   git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
   cd ${my_working_dir}/${package}
-  git checkout ${patch_branch} || { echo "ERROR: failed to checkout ${patch_branch} for ${package}"; exit 1; }
-  echo "Apply ${suite_tag} to ${package} ${pkgver}"
-  maybe_tag "${suite_tag}" "${pkgver}"
+  skip_package="false"
+  git checkout ${patch_branch} || \\
+    { echo "INFO: failed to checkout ${patch_branch} for ${package}, will skip"; skip_package="true"; }
+  if [[ ${skip_package} == "false" ]]; then
+    echo "Apply ${suite_tag} to ${package} ${pkgver}"
+    maybe_tag "${suite_tag}" "${pkgver}"
+  fi
+  fi
 done
 
 exit 0
