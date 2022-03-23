@@ -58,10 +58,8 @@ create_working_directory() {
   mrb g --github-org LArSoft --repo-type github webevd
   # look for extra options 
   if [ -z "${extra_options}" ]; then
-    echo "checkout dunetpc"
-    mrb g dunetpc
-    echo "checkout duneutil"
-    mrb g duneutil
+    echo "checkout dune suite"
+    mrb g dune_suite
     # LArIAT is hopelessly out of date
     #echo "checkout lariatsoft"
     #mrb g lariatsoft
@@ -81,10 +79,8 @@ create_working_directory() {
     echo "checkout argoneutcode"
     mrb g argoneutcode
   elif [[ ${extra_options} == "dune" ]]; then
-    echo "checkout dunetpc"
-    mrb g dunetpc
-    echo "checkout duneutil"
-    mrb g duneutil
+    echo "checkout dune suite"
+    mrb g dune_suite
   elif [[ ${extra_options} == "icarus" ]]; then
     echo "checkout icaruscode"
     mrb g icaruscode
