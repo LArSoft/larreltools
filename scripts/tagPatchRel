@@ -139,12 +139,16 @@ do
    fi
 done
 
+# make sure we are on the expected larsoft branch
+cd ${MRB_SOURCE}/larsoft || exit 1
+git checkout ${branch}  || exit 1
 get_version larsoft
+larsoft_version=${version}
 if [[ ${larsoft_version} != ${masterTag} ]]; then
   echo "ERROR: mismatch between ${masterTag} and larsoft version ${larsoft_version}"
   exit 1
 else
-  echo "found larsoft_version ${larsoft_version}"
+  echo "found larsoft_version ${larsoft_version} for ${masterTag} on ${branch}"
 fi
 for REP in $pkglist
 do
