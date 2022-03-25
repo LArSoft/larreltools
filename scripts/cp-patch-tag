@@ -130,8 +130,12 @@ for package in "${packages[@]}"; do
   git clone ${repository}/${package}${suffix} || { echo "ERROR: failed to clone ${package}"; exit 1; }
   cd ${my_working_dir}/${package}
   skip_package="false"
-  git checkout ${patch_branch} || \\
-    { echo "INFO: failed to checkout ${patch_branch} for ${package}, will skip"; skip_package="true"; }
+  git checkout ${patch_branch}
+  current_branch=`git branch --show-current`
+  if [[ ${current_branch} != ${patch_branch} ]]; then
+    echo "INFO: failed to checkout ${patch_branch} for ${package}, will skip"
+    skip_package="true"
+  fi
   if [[ ${skip_package} == "false" ]]; then
     echo "Apply ${suite_tag} to ${package} ${pkgver}"
     maybe_tag "${suite_tag}" "${pkgver}"
