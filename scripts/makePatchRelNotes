@@ -106,15 +106,19 @@ function get_util_release()
     prever=${relver}
   fi
   skip_pkg="false"
-  git checkout LARSOFT_SUITE_${larsoft_version} || \
-     { echo "${pkg} has no LARSOFT_SUITE_${larsoft_version} tag"; skip_pkg="true"; }
+  check_tag=`git tag -l | grep LARSOFT_SUITE_${larsoft_version} | wc -w`
+  if [[ ${check_tag} == 0 ]]; then
+    echo "${pkg} has no LARSOFT_SUITE_${larsoft_version} tag"
+    skip_pkg="true"
+  else
+    git checkout LARSOFT_SUITE_${larsoft_version} 
+  fi
   if [[ ${skip_pkg} == "true" ]]; then
     relver=0;
   else
     get_version ${pkg}
   fi
   echo "Found ${pkg} ${relver} ${prever}"
-  #relver=`grep '^[  ]*parent' ${my_working_dir}/${pkg}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
   if [[ ${skip_pkg} != "true" ]]; then
     echo >> ${relnote}
     echo "h2. ${pkg} ${relver}" >> ${relnote}
