@@ -78,10 +78,10 @@ function get_package_release()
   echo "Found ${pkg} ${relver} ${prever}"
   if [[ ${skip_pkg} != "true" ]]; then
     echo >> ${relnote}
-    echo "h2. ${pkg} ${relver}" >> ${relnote}
+    echo "## ${pkg} ${relver}" >> ${relnote}
     echo >> ${relnote}
     if [[ ${prever} != ${relver} ]]; then
-      echo "* \"changes since ${prever}\":${repository}/${pkg}/compare/${prever}...${relver}" >> ${relnote}
+      echo "- [changes since ${prever}](${repository}/${pkg}/compare/${prever}...${relver})" >> ${relnote}
       echo >> ${relnote}
     fi
   fi
@@ -121,10 +121,10 @@ function get_util_release()
   echo "Found ${pkg} ${relver} ${prever}"
   if [[ ${skip_pkg} != "true" ]]; then
     echo >> ${relnote}
-    echo "h2. ${pkg} ${relver}" >> ${relnote}
+    echo "## ${pkg} ${relver}" >> ${relnote}
     echo >> ${relnote}
     if [[ ${prever} != ${relver} ]]; then
-      echo "* \"changes since ${prever}\":${repository}/${pkg}/compare/${prever}...${relver}" >> ${relnote}
+      echo "- [changes since ${prever}](${repository}/${pkg}/compare/${prever}...${relver})" >> ${relnote}
       echo >> ${relnote}
     fi
   fi
@@ -226,27 +226,27 @@ find_larsoftobj_release
 relnote=${my_working_dir}/ReleaseNotes-${larsoft_version}
 rm -f ${relnote}
 echo > ${relnote}
-echo "| ${larsoft_version} | ${larsoftobj_version} | ${today} |  |  | [[ReleaseNotes${version_string}|Release Notes]] |">> ${relnote}
+echo "| ${larsoft_version} | ${larsoftobj_version} | ${today} |  |  | [Release Notes](ReleaseNotes${version_string}) |">> ${relnote}
 echo >> ${relnote}
-echo "h1. LArSoft ${larsoft_version} Release Notes" >> ${relnote}
+echo "# LArSoft ${larsoft_version} Release Notes" >> ${relnote}
 echo >> ${relnote}
-echo "{{>TOC}}" >> ${relnote}
+echo "[list of LArSoft releases](LArSoft_release_list)" >> ${relnote}
 echo >> ${relnote}
-echo "[[LArSoft_release_list|list of LArSoft releases]]" >> ${relnote}
-echo "Download instructions for \"larsoft ${larsoft_version}\":http://scisoft.fnal.gov/scisoft/bundles/larsoft/${larsoft_version}/larsoft-${larsoft_version}.html" >> ${relnote}
-echo "Download instructions for \"just larsoftobj ${larsoftobj_version}\":http://scisoft.fnal.gov/scisoft/bundles/larsoftobj/${larsoftobj_version}/larsoftobj-${larsoftobj_version}.html" >> ${relnote}
+echo "Download instructions for [larsoft ${larsoft_version}](http://scisoft.fnal.gov/scisoft/bundles/larsoft/${larsoft_version}/larsoft-${larsoft_version}.html)" >> ${relnote}
 echo >> ${relnote}
-echo "h2. Purpose" >> ${relnote}
+echo "Download instructions for [just larsoftobj ${larsoftobj_version}](http://scisoft.fnal.gov/scisoft/bundles/larsoftobj/${larsoftobj_version}/larsoftobj-${larsoftobj_version}.html)" >> ${relnote}
 echo >> ${relnote}
-echo "* requested patch release" >> ${relnote}
+echo "## Purpose" >> ${relnote}
 echo >> ${relnote}
-echo "h2. New features" >> ${relnote}
+echo "- requested patch release" >> ${relnote}
 echo >> ${relnote}
-echo "h2. Bug fixes" >> ${relnote}
+echo "## New features" >> ${relnote}
 echo >> ${relnote}
-echo "h2. Updated dependencies" >> ${relnote}
+echo "## Bug fixes" >> ${relnote}
 echo >> ${relnote}
-echo "h1. Change List" >> ${relnote}
+echo "## Updated dependencies" >> ${relnote}
+echo >> ${relnote}
+echo "# Change List" >> ${relnote}
 echo >> ${relnote}
 
 set -x
@@ -257,14 +257,12 @@ cd ${my_working_dir}/${pkg}
 git checkout ${previous_version_string}
   get_version ${pkg}
   prever=${relver}
-#prever=v`grep '^[  ]*project' ${my_working_dir}/${pkg}/CMakeLists.txt | grep ${pkg} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
 git checkout ${larsoft_version}
   get_version ${pkg}
-#relver=v`grep '^[  ]*project' ${my_working_dir}/${pkg}/CMakeLists.txt | grep ${pkg} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
-echo "h2. ${pkg} ${relver}" >> ${relnote}
+echo "## ${pkg} ${relver}" >> ${relnote}
 echo >> ${relnote}
 if [[ ${prever} != ${relver} ]]; then
-  echo "* \"changes since ${prever}\":${repository}/${pkg}/compare/${prever}...${larsoft_version}" >> ${relnote}
+  echo "- [changes since ${prever}](${repository}/${pkg}/compare/${prever}...${larsoft_version})" >> ${relnote}
   echo >> ${relnote}
 fi
 echo >> ${relnote}
