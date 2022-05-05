@@ -196,9 +196,9 @@ echo "| ${larsoft_version} | ${larsoftobj_version} | ${today} |  |  | [Release N
 echo >> ${relnote}
 echo "# LArSoft ${larsoft_version} Release Notes" >> ${relnote}
 echo >> ${relnote}
-echo "[list of LArSoft releases](LArSoft_release_list)" >> ${relnote}
+echo "[list of LArSoft releases](https://larsoft.github.io/LArSoftWiki/releases/LArSoft_release_list)" >> ${relnote}
 echo >> ${relnote}
-echo "Download instructions for \"larsoft ${larsoft_version}\":http://scisoft.fnal.gov/scisoft/bundles/larsoft/${larsoft_version}/larsoft-${larsoft_version}.html" >> ${relnote}
+echo "Download instructions for [larsoft ${larsoft_version}](http://scisoft.fnal.gov/scisoft/bundles/larsoft/${larsoft_version}/larsoft-${larsoft_version}.html)" >> ${relnote}
 echo >> ${relnote}
 echo "Download instructions for [just larsoftobj ${larsoftobj_version}](http://scisoft.fnal.gov/scisoft/bundles/larsoftobj/${larsoftobj_version}/larsoftobj-${larsoftobj_version}.html)" >> ${relnote}
 echo >> ${relnote}
