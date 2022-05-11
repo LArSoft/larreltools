@@ -40,6 +40,26 @@ function get_version()
   echo "Found ${package} version ${relver}"
 }
 
+function get_larpandoracontent_version()
+{
+  local package=$1
+  echo "checking package ${package}"
+  relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # possible old style package
+  if [[ ${relver} == v ]]; then
+    relver=`grep '^[  ]*parent' ${my_working_dir}/${package}/ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${relver} == vVERSION ]]; then
+    relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  # as of larsoft v09_51_00
+  if [[ ${relver} == larpandoracontent ]]; then
+    relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep VERSION | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  echo "Found ${package} version ${relver}"
+}
+
 function get_package_release()
 {
   local pkg=$1
@@ -87,6 +107,31 @@ function get_util_release()
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag"; exit 1; }
   get_version ${pkg}
+  echo "Found ${pkg} ${relver} ${prever}"
+  echo >> ${relnote}
+  echo "## ${pkg} ${relver}" >> ${relnote}
+  echo >> ${relnote}
+  if [[ ${prever} != ${relver} ]]; then
+  echo "- \"changes since ${prever}\":${repository}/${pkg}/compare/${prever}...${relver}" >> ${relnote}
+  echo >> ${relnote}
+  fi
+  cd ${my_working_dir}
+  set +x
+}
+
+function get_larpandoracontent_release()
+{
+  local pkg=$1
+  set -x
+  cd ${my_working_dir}
+  git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
+  cd ${my_working_dir}/${pkg}
+  git checkout ${previous_version_string}
+  get_larpandoracontent_version ${pkg}
+  prever=${relver}
+  git checkout LARSOFT_SUITE_${larsoft_version} || \
+     { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag"; exit 1; }
+  get_larpandoracontent_version ${pkg}
   echo "Found ${pkg} ${relver} ${prever}"
   echo >> ${relnote}
   echo "## ${pkg} ${relver}" >> ${relnote}
@@ -248,7 +293,7 @@ done
 
 # larpandoracontent needs special handling
 package=larpandoracontent
-get_util_release ${package}
+get_larpandoracontent_release ${package}
 
 for package in "${obj_packages[@]}"; do
   get_util_release ${package}
