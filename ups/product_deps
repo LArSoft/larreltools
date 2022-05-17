@@ -4,7 +4,9 @@
 # The version should be of the form vx_yy_zz (e.g. v1_02_03)
 parent larreltools
 chains current
-# The no_fq_dir keyword indicates that this product is NULL flavored
+# the package is architecture-independent
+noarch
+# The no_fq_dir keyword indicates that this product should not have a fully-qualified subdirectory
 no_fq_dir
 
 # non default directory options
