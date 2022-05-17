@@ -90,6 +90,10 @@ function get_version()
   if [[ ${oldversion} == vVERSION ]]; then
     oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
   fi
+  # as of larsoft v09_51_00
+  if [[ ${oldversion} == larpandoracontent ]]; then
+    oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep VERSION | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
   ##echo "Found ${package} ${oldversion}"
 }
 
