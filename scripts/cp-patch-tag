@@ -12,7 +12,7 @@
 ########################################################################
 
 # Subsidiary packages to be checked.
-declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj larvecutils lardataobj lardataalg larcorealg larcoreobj webevd)
+declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larpandoracontent larwirecell larsoftobj larvecutils lardataobj lardataalg larcorealg larcoreobj)
 
 # Tag message.
 tag_msg='LArSoft suite cross-package tag'

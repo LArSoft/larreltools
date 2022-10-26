@@ -6,7 +6,7 @@
 thisComFull=$(basename $0)
 fullCom="${thisComFull%.*}"
 
-declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoft larsoftobj lardataobj lardataalg larcorealg larcoreobj webevd larpandoracontent larvecutils)
+declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoft larsoftobj lardataobj lardataalg larcorealg larcoreobj larpandoracontent larvecutils)
 
 # Usage function
 function usage() {

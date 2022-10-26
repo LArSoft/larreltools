@@ -54,8 +54,9 @@ create_working_directory() {
   echo "checkout larpandoracontent"
   mrb g --repo-type github larpandoracontent
   # the github orginization for webevd is defined in mrb v4_00_02 or later
-  echo "checkout webevd"
-  mrb g --github-org LArSoft --repo-type github webevd
+  # webevd dropped with the larsoft v09_62_00 distribution
+##  echo "checkout webevd"
+##  mrb g --github-org LArSoft --repo-type github webevd
   # look for extra options 
   if [ -z "${extra_options}" ]; then
     echo "checkout dune suite"
