@@ -152,7 +152,7 @@ FULL_PATH_NAMES        = YES
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        = /grid/fermiapp/products/larsoft \
+STRIP_FROM_PATH        = /cvmfs/larsoft.opensciencegrid.org/products \
                          $(ART_DIR)/source \
                          $(CANVAS_DIR)/source \
                          $(MESSAGEFACILITY_DIR)/source \
@@ -793,19 +793,29 @@ INPUT                  = $(LARANA_DIR)/source \
                          $(LAREVENTDISPLAY_DIR)/source \
                          $(LAREVT_DIR)/source \
                          $(LAREXAMPLES_DIR)/source \
+                         $(LARG4_DIR)/source \
                          $(LARPANDORA_DIR)/source \
                          $(LARPANDORACONTENT_DIR)/source \
+                         $(LARRECODNN_DIR)/source \
                          $(LARRECO_DIR)/source \
+                         $(LARSIMRAD_DIR)/source \
+                         $(LARSIMDNN_DIR)/source \
                          $(LARSIM_DIR)/source \
                          $(LARSOFT_DIR)/source \
                          $(LARWIRECELL_DIR)/source \
+                         $(LARVECUTILS_DIR)/source \
+                         $(LARFINDER_DIR) \
+                         $(WEBEVD_DIR)/source \
                          $(NUTOOLS_DIR)/source \
+                         $(NUEVDB_DIR)/source \
                          $(NUG4_DIR)/source \
                          $(NUGEN_DIR)/source \
                          $(NURANDOM_DIR)/source \
                          $(NUSIMDATA_DIR)/source \
+                         $(NUFINDER_DIR) \
                          $(GENIE)/src \
                          $(GEANT4_DIR)/source \
+                         $(ARTG4TK_DIR)/source \
                          $(ART_DIR)/source \
                          $(CANVAS_DIR)/source \
                          $(MESSAGEFACILITY_DIR)/source \
