@@ -1,15 +1,20 @@
 #!/bin/sh
 
+
+
 export DOXVER=doxygen-1.8.11
 #export LARNIGHTLY=/grid/fermiapp/larsoft/home/larsoft/code/nightly_build/srcs
 export LARHOME=/grid/fermiapp/larsoft/home/larsoft
 #export LARPRODUCTS=/grid/fermiapp/products/larsoft
-export LARPRODUCTS=/cvmfs/larsoft.opensciencegrid.org/products
+#export LARPRODUCTS=/cvmfs/larsoft.opensciencegrid.org/products
 export LAR_WWW=/nusoft/app/web/htdoc/larsoft/doxsvn
 
-source ${LARPRODUCTS}/setup
-#export LARVER=`ups list -aK+ larsoft | grep -v v1_ | sort -r | head -n 1 | cut -f2 -d" " | cut -f2 -d"\""`
-export LARVER=`ups list -aK version larsoft | sort | grep -v _rc | grep -v v1_0 | tail -1 | sed -e 's/"//g'`
+source /cvmfs/larsoft.opensciencegrid.org/setup_larsoft.sh
+if [[ -z ${1} ]]; then
+  export LARVER=`ups list -aK version larsoft | sort | grep -v _rc | grep -v v1_0 | tail -1 | sed -e 's/"//g'`
+else
+  export LARVER=${1}
+fi
 setup larsoft ${LARVER} -q e20:debug
 status=$?
 if [[ ${status} != 0 ]]; then exit 1; fi
