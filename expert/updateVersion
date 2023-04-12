@@ -6,12 +6,13 @@
 # Usage function
 function usage()
 {
-    echo "Usage: $fullCom [-d|-h] <major|minor|micro>"
+    echo "Usage: $fullCom [-d|-h] <major|minor|micro|rc>"
     echo "  Increase release number by one as requested"
     echo
     echo "        major - increment major release number, minor and micro will be zero"
     echo "        minor - increment minor release number, micro will be zero"
-    echo "        micro - increment micro release nuber"
+    echo "        micro - increment micro release number"
+    echo "        rc    - increment release candidate number"
     echo
     echo " options:"
     echo "   -h - this help"
@@ -77,10 +78,35 @@ function calculateMicroUpdate()
   fi
 }
 
+# increment the release candidate version
+function calculateRelCanUpdate()
+{
+  local version=$1
+  newversion=empty
+  major=`echo $version | cut -f1 -d"."`
+  minor=`echo $version | cut -f2 -d"."`
+  micro=`echo $version | cut -f3 -d"." | cut -f1 -d"-"`
+  oldrc=`echo $version | cut -f3 -d"." | cut -f2 -d"-" | sed -e 's/rc\(.*\)$/\1/' | sed -e 's/^0//'`
+  newrc=$(($oldrc+1))
+  rclen=${#newrc}
+  #echo "updating $input $package $version"
+  #echo "  $major $minor $micro $newrc ${#newrc}"
+  newversion="${major}.${minor}.${micro}-rc${newrc}"
+}
+
+
 function get_version()
 {
   local package=$1
   ##echo "checking package ${package}"
+  have_version=`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep VERSION | wc -l`
+  if (( ${have_version} == 0 )); then
+    if [[ `grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f2 -d " "` == set ]]; then
+      oldversion=`grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f4 -d " "`
+    else
+      oldversion=`grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f3 -d " "`
+    fi
+  else
   oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
   # possible old style package
   if [[ ${oldversion} == v ]]; then
@@ -93,6 +119,7 @@ function get_version()
   # as of larsoft v09_51_00
   if [[ ${oldversion} == larpandoracontent ]]; then
     oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep VERSION | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
   fi
   ##echo "Found ${package} ${oldversion}"
 }
@@ -135,7 +162,8 @@ case $type in
   major ) ;;
   minor ) ;;
   micro ) ;;
-  * ) echo 'ERROR: please specify major, minor, or micro'; usage ; exit 1 ;; 
+  rc ) ;;
+  * ) echo 'ERROR: please specify major, minor, micro, or rc'; usage ; exit 1 ;;
 esac
 
 # find the directories
@@ -167,6 +195,8 @@ do
      calculateMinorUpdate ${oldversion}
    elif [[ ${type} == micro ]]; then
      calculateMicroUpdate ${oldversion}
+   elif [[ ${type} == rc ]]; then
+     calculateRelCanUpdate ${oldversion}
    fi
    echo "updating ${REP} from ${oldversion} to ${newversion}"
    if [[ ${dry_run} == "true" ]]; then
