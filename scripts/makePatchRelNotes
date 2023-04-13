@@ -28,6 +28,14 @@ function get_version()
 {
   local package=$1
   echo "checking package ${package}"
+  have_version=`grep '^[  ]*project'  ${my_working_dir}/${package}/CMakeLists.txt | grep VERSION | wc -l`
+  if (( ${have_version} == 0 )); then
+    if [[ `grep CMAKE_PROJECT_VERSION_STRING  ${my_working_dir}/${package}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f2 -d " "` == set ]]; then
+      relver=v`grep CMAKE_PROJECT_VERSION_STRING  ${my_working_dir}/${package}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/-rc/rc/'`
+    else
+      relver=v`grep CMAKE_PROJECT_VERSION_STRING  ${my_working_dir}/${package}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/-rc/rc/'`
+    fi
+  else
   relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
   # possible old style package
   if [[ ${relver} == v ]]; then
@@ -36,6 +44,7 @@ function get_version()
   # dealing with larpandoracontent
   if [[ ${relver} == vVERSION ]]; then
     relver=v`grep '^[  ]*project' ${my_working_dir}/${package}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
   fi
   echo "Found ${package} version ${relver}"
 }
@@ -55,7 +64,6 @@ function get_package_release()
     pv=LARSOFT_SUITE_${larsoft_version}
     continue
   fi
-  set -x
   cd ${my_working_dir}
   git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
@@ -86,14 +94,12 @@ function get_package_release()
     fi
   fi
   cd ${my_working_dir}
-  set +x
 }
 
 function get_util_release()
 {
   local pkg=$1
   local skip_pkg="false"
-  set -x
   cd ${my_working_dir}
   git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
   cd ${my_working_dir}/${pkg}
@@ -129,7 +135,6 @@ function get_util_release()
     fi
   fi
   cd ${my_working_dir}
-  set +x
 }
 
 function find_larsoftobj_release()
@@ -141,11 +146,19 @@ function find_larsoftobj_release()
   git checkout LARSOFT_SUITE_${larsoft_version} || \
      { echo "ERROR: could not find LARSOFT_SUITE_${larsoft_version} tag for larsoftobj"; exit 1; }
   # special case
+  have_version=`grep '^[  ]*project'  CMakeLists.txt | grep VERSION | wc -l`
+  if (( ${have_version} == 0 )); then
+    if [[ `grep CMAKE_PROJECT_VERSION_STRING  CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f2 -d " "` == set ]]; then
+      larsoftobj_version=v`grep CMAKE_PROJECT_VERSION_STRING  CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/-rc/rc/'`
+    else
+      larsoftobj_version=v`grep CMAKE_PROJECT_VERSION_STRING  CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/-rc/rc/'`
+    fi
+  else
   larsoftobj_version=v`grep '^[  ]*project' CMakeLists.txt | grep larsoftobj | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
-  #larsoftobj_version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
-  # possible old style package
+   possible old style package
   if [[ ${larsoftobj_version} == v ]]; then
     larsoftobj_version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
   fi
   echo "found larsoftobj_version ${larsoftobj_version}"
   if [[ -n "$larsoftobj_version" ]]; then
@@ -226,7 +239,7 @@ find_larsoftobj_release
 relnote=${my_working_dir}/ReleaseNotes-${larsoft_version}
 rm -f ${relnote}
 echo > ${relnote}
-echo "| ${larsoft_version} | ${larsoftobj_version} | ${today} |  |  | [Release Notes](ReleaseNotes${version_string}) |">> ${relnote}
+echo "| ${larsoft_version} | ${larsoftobj_version} | ${today} |  |  | [Release Notes](https://github.com/LArSoft/larsoft/releases/tag/${larsoft_version}) |">> ${relnote}
 echo >> ${relnote}
 echo "# LArSoft ${larsoft_version} Release Notes" >> ${relnote}
 echo >> ${relnote}
@@ -249,7 +262,6 @@ echo >> ${relnote}
 echo "# Change List" >> ${relnote}
 echo >> ${relnote}
 
-set -x
 cd ${my_working_dir}
 pkg=larsoft
 git clone ${repository}/${pkg}${suffix} || { echo "ERROR: failed to clone ${pkg}"; exit 1; }
@@ -267,7 +279,6 @@ if [[ ${prever} != ${relver} ]]; then
 fi
 echo >> ${relnote}
 cd ${my_working_dir}
-set +x
 last_pkg=larsoft
 
 for package in "${extra_packages[@]}"; do
