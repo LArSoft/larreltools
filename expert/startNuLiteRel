@@ -27,8 +27,8 @@ create_working_directory() {
   fi
   if [ -d ${working_dir}/${tag} ]
   then
-      echo 'INFO:  ${working_dir}/${tag} already exists!'
-      echo 'INFO:  adding build directories for ${basequal}'
+      echo "INFO:  ${working_dir}/${tag} already exists!"
+      echo "INFO:  adding build directories for ${basequal}"
   fi
   mkdir -p ${working_dir}/${tag} || { echo "ERROR: failed to create ${working_dir}/${tag}"; exit 1; }
   mkdir -p ${working_dir}/${tag}/${basequal}p  ${working_dir}/${tag}/${basequal}d || \
