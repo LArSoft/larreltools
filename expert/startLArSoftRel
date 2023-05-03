@@ -9,11 +9,12 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <working_dir> <new tag> [argoneut|dune|icarus|lariat|sbnd|uboone]"
+    echo "Usage: $fullCom <working_dir> <new tag> <base qualifier> [argoneut|dune|icarus|lariat|sbnd|uboone]"
     echo "       mkdir <working_dir>/<tag>"
     echo "       run newDev"
     echo "       git clone larsoft and specified experiment repositories from github"
-    echo "  If the third argument is not specified, all experiment repositories will be cloned."
+    echo "  The base qualifier should be one of e20, e26, c14 etc."
+    echo "  If the fourth argument is not specified, all experiment repositories will be cloned."
     echo
 }
 
@@ -27,55 +28,59 @@ create_working_directory() {
   fi
   if [ -d ${working_dir}/${tag} ]
   then
-      echo 'ERROR:  ${working_dir}/${tag} already exists!'
+      echo "INFO:  ${working_dir}/${tag} already exists!"
+      echo "INFO:  adding build directories for ${basequal}"
+  fi
+  if [ -d ${working_dir}/${tag}/${basequal}p ]
+  then
+      echo "ERROR:  ${working_dir}/${tag}/${basequal}p already exists!"
       usage
       exit 1
   fi
   mkdir -p ${working_dir}/${tag} || { echo "ERROR: failed to create ${working_dir}/${tag}"; exit 1; }
-  mkdir -p ${working_dir}/${tag}/e20p  ${working_dir}/${tag}/e20d || { echo "ERROR: failed to create ${working_dir}/${tag}/e20p"; exit 1; }
-  mkdir -p ${working_dir}/${tag}/c7p  ${working_dir}/${tag}/c7d || { echo "ERROR: failed to create ${working_dir}/${tag}/c7p"; exit 1; }
+  mkdir -p ${working_dir}/${tag}/${basequal}p  || { echo "ERROR: failed to create ${working_dir}/${tag}/${basequal}p"; exit 1; }
+  mkdir -p ${working_dir}/${tag}/${basequal}d || { echo "ERROR: failed to create ${working_dir}/${tag}/${basequal}d"; exit 1; }
   cd ${working_dir}/${tag}
   echo "run mrb newDev"
-  mrb newDev -f -v ${tag} -q e20:prof -T e20p || exit 1
-  mrb newDev -f -v ${tag} -q e20:debug -T e20d || exit 1
-  mrb newDev -f -v ${tag} -q c7:prof -T c7p || exit 1
-  mrb newDev -f -v ${tag} -q c7:debug -T c7d || exit 1
+  mrb newDev -f -v ${tag} -q ${basequal}:prof -T ${basequal}p || exit 1
+  mrb newDev -f -v ${tag} -q ${basequal}:debug -T ${basequal}d || exit 1
   echo "source localProductsXXX/setup"
-  source e20p/localProducts*/setup
+  source ${basequal}p/localProducts*/setup
   cd $MRB_SOURCE
-  echo "checkout larsoft_suite"
-  mrb g --repo-type github larsoft_suite
-  echo "checkout larsoftobj_suite"
-  mrb g --repo-type github larsoftobj_suite
-  echo "checkout larbatch"
-  mrb g --repo-type github larbatch
-  echo "checkout larutils"
-  mrb g --repo-type github larutils
-  echo "checkout larpandoracontent"
-  mrb g --repo-type github larpandoracontent
-  # the github orginization for webevd is defined in mrb v4_00_02 or later
-  # webevd dropped with the larsoft v09_62_00 distribution
-##  echo "checkout webevd"
-##  mrb g --github-org LArSoft --repo-type github webevd
+  if [ ! -d ${MRB_SOURCE}/larsoft ]; then
+    echo "checkout larsoft_suite"
+    mrb g --repo-type github larsoft_suite
+  fi
+  if [ ! -d ${MRB_SOURCE}/larsoftobj ]; then
+    echo "checkout larsoftobj_suite"
+    mrb g --repo-type github larsoftobj_suite
+  fi
+  if [ ! -d ${MRB_SOURCE}/larbatch ]; then
+    echo "checkout larbatch"
+    mrb g --repo-type github larbatch
+  fi
+  if [ ! -d ${MRB_SOURCE}/larutils ]; then
+    echo "checkout larutils"
+    mrb g --repo-type github larutils
+  fi
+  if [ ! -d ${MRB_SOURCE}/larpandoracontent ]; then
+    echo "checkout larpandoracontent"
+    mrb g --repo-type github larpandoracontent
+  fi
   # look for extra options 
   if [ -z "${extra_options}" ]; then
-    echo "checkout dune suite"
-    mrb g dune_suite
-    # LArIAT is hopelessly out of date
-    #echo "checkout lariatsoft"
-    #mrb g lariatsoft
-    #mrb g lariatfragments
-    #mrb g lariatutil
-    # should replace with sbn, icarus, and sbnd
-    #echo "checkout sbndcode"
-    #mrb g sbndcode
-    #mrb g sbndutil
-    ##echo "checkout icaruscode"
-    ##mrb g icaruscode
-    echo "checkout uboonecode"
-    mrb  g uboone_suite
-    echo "checkout argoneutcode"
-    mrb g argoneutcode
+    if [ ! -d ${MRB_SOURCE}/duneana ]; then
+      echo "checkout dune suite"
+      mrb g dune_suite
+    fi
+    if [ ! -d ${MRB_SOURCE}/uboonecode ]; then
+      echo "checkout uboonecode"
+      mrb  g uboone_suite
+    fi
+    if [ ! -d ${MRB_SOURCE}/argoneutcode ]; then
+      echo "checkout argoneutcode"
+      mrb g argoneutcode
+    fi
   elif [[ ${extra_options} == "argoneut" ]]; then
     echo "checkout argoneutcode"
     mrb g argoneutcode
@@ -115,7 +120,8 @@ done
 
 working_dir=${1}
 tag=${2}
-extra_options=${3}
+basequal=${3}
+extra_options=${4}
 
 if [ -z "${working_dir}" ]
 then
@@ -126,6 +132,12 @@ fi
 if [ -z "${tag}" ]
 then
     echo 'ERROR: no tag specified'
+    usage
+    exit 1
+fi
+if [ -z "${basequal}" ]
+then
+    echo 'ERROR: no basequal specified'
     usage
     exit 1
 fi
