@@ -11,7 +11,7 @@ export LAR_WWW=/nusoft/app/web/htdoc/larsoft/doxsvn
 
 source /cvmfs/larsoft.opensciencegrid.org/setup_larsoft.sh
 if [[ -z ${1} ]]; then
-  export LARVER=`ups list -aK version larsoft | sort | grep -v _rc | grep -v v1_0 | tail -1 | sed -e 's/"//g'`
+  export LARVER=`ups list -aK version larsoft | sort | grep -v rc | grep -v v1_0 | tail -1 | sed -e 's/"//g'`
 else
   export LARVER=${1}
 fi
