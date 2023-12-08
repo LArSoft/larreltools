@@ -109,7 +109,14 @@ function get_version()
   local package=$1
   version=empty
   ##echo "checking package ${package}"
-  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # release candidates and test releases have the version in a different line
+  if [[ $(grep '^[  ]*project' CMakeLists.txt | grep VERSION) ]] ; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+    ##echo "project version is $version"
+  else
+    version=v`grep 'PROJECT_NAME' CMakeLists.txt | grep _CMAKE_PROJECT_VERSION_STRING | tr -s '[:space:]' | cut -f2 -d " " | cut -f1 -d")" | sed 's/\./_/g' | sed 's/\-//g'`
+    ##echo "PROJECT_NAME version is $version"
+  fi
   # possible old style package
   if [[ ${version} == v ]]; then
     version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
