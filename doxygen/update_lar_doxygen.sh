@@ -7,7 +7,7 @@ export DOXVER=doxygen-1.8.11
 export LARHOME=/grid/fermiapp/larsoft/home/larsoft
 #export LARPRODUCTS=/grid/fermiapp/products/larsoft
 #export LARPRODUCTS=/cvmfs/larsoft.opensciencegrid.org/products
-export LAR_WWW=/nusoft/app/web/htdoc/larsoft/doxsvn
+##export LAR_WWW=/nusoft/app/web/htdoc/larsoft/doxsvn
 
 source /cvmfs/larsoft.opensciencegrid.org/setup_larsoft.sh
 if [[ -z ${1} ]]; then
@@ -15,7 +15,7 @@ if [[ -z ${1} ]]; then
 else
   export LARVER=${1}
 fi
-setup larsoft ${LARVER} -q e20:debug
+setup larsoft ${LARVER} -q e26:debug
 status=$?
 if [[ ${status} != 0 ]]; then exit 1; fi
 
@@ -35,11 +35,11 @@ fi
 
 ${DOXVER}/bin/doxygen doxylar > lar_doxygen.log
 
-cd ${LAR_WWW}
-rm -rf ./html
-echo Copying output to ${LAR_WWW}
-cp -r ${LARHOME}/doxygen/dox/html/ ./html
-cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
+##cd ${LAR_WWW}
+##rm -rf ./html
+##echo Copying output to ${LAR_WWW}
+##cp -r ${LARHOME}/doxygen/dox/html/ ./html
+##cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
 
 export LAR_SITE=/web/sites/c/code-doc.larsoft.org/htdocs/docs/latest
 cd ${LAR_SITE} || exit 1
