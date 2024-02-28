@@ -52,6 +52,7 @@ function maybe_tag() {
     local myver=$1
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
     echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    mydotver=${myver//_/.}; mydotver=${mydotver#v}
     if (( ${have_tag} > 0 )); then
       if [[ ${REP} == nutools ]]; then
         echo "merge changes in nutools with develop."
@@ -63,15 +64,16 @@ function maybe_tag() {
         echo "tag $myver already exists: doing nothing."
       fi 
     else
-      echo "ready to tag ${REP}."
+      echo "ready to tag ${REP} with ${version} and ${mydotver}."
       git checkout main  || exit 1
       git pull  || exit 1
       git merge -m"${REP} ${version} for nulite ${nulite_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
+      git tag -a -m"${REP} ${mydotver} for nulite ${nulite_version}" ${mydotver}  || exit 1
       git checkout develop  || exit 1
       git pull  || exit 1
       git merge -m"nulite ${nulite_version}" release/${tag}  || exit 1
-      git push origin main develop ${version} || exit 1
+      git push origin main develop ${version} ${mydotver} || exit 1
     fi
 }
 
