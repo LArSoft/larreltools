@@ -45,6 +45,7 @@ function commit_ups_product_deps() {
 function maybe_tag() {
     local myver=$1
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
+    local mydotver=${myver//_/.}; mydotver=${mydotver#v}
     #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
     #echo "have_upstream is ${have_upstream}"
@@ -66,20 +67,23 @@ function maybe_tag() {
       fi
       git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
-      git push upstream ${main_branch} ${version} || exit 1
+      git tag -a -m"${REP} ${mydotver} for larsoft ${larsoft_version}" ${mydotver}  || exit 1
+      git push upstream ${main_branch} ${version} ${mydotver} || exit 1
     else
       echo "ready to tag ${REP}"
       git checkout ${main_branch}  || exit 1
       git pull  || exit 1
       git merge -m"${REP} ${version} for larsoft ${larsoft_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
-      git push origin ${main_branch} ${version} || exit 1
+      git tag -a -m"${REP} ${mydotver} for larsoft ${larsoft_version}" ${mydotver}  || exit 1
+      git push origin ${main_branch} ${version} ${mydotver} || exit 1
     fi
 }
 
 function maybe_tag_branch() {
     local mybranch=$1
     local myver=$2
+    local mydotver=${myver//_/.}; mydotver=${mydotver#v}
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
     #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
     have_upstream=`git remote -v | grep upstream | wc -l`
@@ -100,7 +104,8 @@ function maybe_tag_branch() {
       echo "ready to tag ${REP} on branch ${mybranch}"
       git pull  || exit 1
       git tag -a -m"${REP} ${version} for larsoft ${larsoft_version}" ${version}  || exit 1
-      git push origin ${mybranch} ${version} || exit 1
+      git tag -a -m"${REP} ${mydotver} for larsoft ${larsoft_version}" ${mydotver}  || exit 1
+      git push origin ${mybranch} ${version} ${mydotver} || exit 1
     fi
 }
 
