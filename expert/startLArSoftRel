@@ -9,7 +9,7 @@ fullCom="${thisComFull%.*}"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <working_dir> <new tag> <base qualifier> [argoneut|dune|icarus|lariat|sbnd|uboone]"
+    echo "Usage: $fullCom <working_dir> <new tag> <base qualifier> [dune|icarus|lariat|sbnd|uboone]"
     echo "       mkdir <working_dir>/<tag>"
     echo "       run newDev"
     echo "       git clone larsoft and specified experiment repositories from github"
@@ -77,13 +77,6 @@ create_working_directory() {
       echo "checkout uboonecode"
       mrb  g uboone_suite
     fi
-    if [ ! -d ${MRB_SOURCE}/argoneutcode ]; then
-      echo "checkout argoneutcode"
-      mrb g argoneutcode
-    fi
-  elif [[ ${extra_options} == "argoneut" ]]; then
-    echo "checkout argoneutcode"
-    mrb g argoneutcode
   elif [[ ${extra_options} == "dune" ]]; then
     echo "checkout dune suite"
     mrb g dune_suite
