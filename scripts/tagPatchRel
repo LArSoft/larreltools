@@ -46,15 +46,8 @@ function maybe_tag() {
       echo "tag $myver already exists: doing nothing."
     elif (( ${have_upstream} > 0 )); then
       echo "working on a fork in ${REP}"
-      git pull upstream ${branch}
-      code_diff=`git diff release/${tag} | wc -l`
-      if (( ${code_diff} > 0 )); then
-	 echo "${REP} upstream does not match working branch - check and fix"
-	 exit 1
-      fi
-      echo "INFO: tag ${REP} ${version} on branch ${branch}"
-      git tag -a -m"${REP} ${version} for larsoft ${masterTag}" ${version}  || exit 1
-      git push upstream ${branch} ${version} || exit 1
+      echo "This should not happen if when tagging a branch - check and fix"
+      exit 1
     elif [[ "${this_branch}" != "${branch}" ]]; then
       echo "ERROR: on branch ${this_branch}"
       echo "       expect to be on branch ${branch}"
@@ -68,12 +61,20 @@ function maybe_tag() {
     fi
 }
 
+
 function get_version()
 {
   local package=$1
   version=empty
   ##echo "checking package ${package}"
-  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # release candidates and test releases have the version in a different line
+  if [[ $(grep '^[  ]*project' CMakeLists.txt | grep VERSION) ]] ; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+    ##echo "project version is $version"
+  else
+    version=v`grep 'PROJECT_NAME' CMakeLists.txt | grep _CMAKE_PROJECT_VERSION_STRING | tr -s '[:space:]' | cut -f2 -d " " | cut -f1 -d")" | sed 's/\./_/g' | sed 's/\-//g'`
+    ##echo "PROJECT_NAME version is $version"
+  fi
   # possible old style package
   if [[ ${version} == v ]]; then
     version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
@@ -81,6 +82,10 @@ function get_version()
   # dealing with larpandoracontent
   if [[ ${version} == vVERSION ]]; then
     version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  # as of larsoft v09_51_00
+  if [[ ${version} == larpandoracontent ]]; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep VERSION | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/)//'`
   fi
   ##echo "Found ${package} ${version}"
 }
