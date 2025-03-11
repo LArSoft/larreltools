@@ -12,8 +12,10 @@ export LARHOME=/grid/fermiapp/larsoft/home/larsoft
 source /cvmfs/larsoft.opensciencegrid.org/setup_larsoft.sh
 if [[ -z ${1} ]]; then
   export LARVER=`ups list -aK version larsoft | sort | grep -v rc | grep -v v1_0 | tail -1 | sed -e 's/"//g'`
+  export HTMLVER=latest
 else
   export LARVER=${1}
+  export HTMLVER=${1}
 fi
 setup larsoft ${LARVER} -q e26:debug
 status=$?
@@ -43,10 +45,15 @@ ${DOXVER}/bin/doxygen doxylar > lar_doxygen.log
 
 export LAR_SITE=/pubhosting/sites/c/code-doc.larsoft.org/htdocs/docs/latest
 cd ${LAR_SITE} || exit 1
-rm -rf ./html
 echo "Copying output to ${LAR_SITE}"
-cp -r ${LARHOME}/doxygen/dox/html/ ./html
-cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
+if [[ ${HTMLVER} == "latest" ]]; then
+  rm -rf ./html
+  cp -r ${LARHOME}/doxygen/dox/html/ ./html
+  cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
+else
+  cp -r ${LARHOME}/doxygen/dox/html/ ./${HTMLVER}
+  cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./${HTMLVER}/
+fi
 
 echo done at `date`
 
