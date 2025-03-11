@@ -41,7 +41,7 @@ ${DOXVER}/bin/doxygen doxylar > lar_doxygen.log
 ##cp -r ${LARHOME}/doxygen/dox/html/ ./html
 ##cp ${LARHOME}/doxygen/doxytags-larsoft.xml ./html/
 
-export LAR_SITE=/web/sites/c/code-doc.larsoft.org/htdocs/docs/latest
+export LAR_SITE=/pubhosting/sites/c/code-doc.larsoft.org/htdocs/docs/latest
 cd ${LAR_SITE} || exit 1
 rm -rf ./html
 echo "Copying output to ${LAR_SITE}"
