@@ -41,10 +41,19 @@ function calculatePatchUpdate()
   fi
 }
 
+
 function get_version()
 {
   local package=$1
   ##echo "checking package ${package}"
+  have_version=`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep VERSION | wc -l`
+  if (( ${have_version} == 0 )); then
+    if [[ `grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f2 -d " "` == set ]]; then
+      oldversion=`grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f4 -d " "`
+    else
+      oldversion=`grep CMAKE_PROJECT_VERSION_STRING ${REP}/CMakeLists.txt |  tr '()' ' ' | tr -s '[:space:]' | cut -f3 -d " "`
+    fi
+  else
   oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
   # possible old style package
   if [[ ${oldversion} == v ]]; then
@@ -54,9 +63,13 @@ function get_version()
   if [[ ${oldversion} == vVERSION ]]; then
     oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
   fi
+  # as of larsoft v09_51_00
+  if [[ ${oldversion} == larpandoracontent ]]; then
+    oldversion=v`grep '^[  ]*project' ${REP}/CMakeLists.txt | grep VERSION | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g' | sed 's/)//'`
+  fi
+  fi
   ##echo "Found ${package} ${oldversion}"
 }
-
 
 # Determine this command name
 thisComFull=$(basename $0)
