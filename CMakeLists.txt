@@ -4,7 +4,7 @@
 
 CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
 
-project(larreltools VERSION 1.16.02 LANGUAGES NONE)
+project(larreltools VERSION 1.16.03 LANGUAGES NONE)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
