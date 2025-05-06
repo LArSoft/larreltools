@@ -18,7 +18,8 @@ function usage()
     echo "   -h - this help"
     echo "   -d - dry run, no changes will be made"
     echo
-    echo "  Release numbers are read from \$MRB_SOURCE/*/ups/product_deps"
+    echo "  Release numbers are read first from the top level CMakeLists.txt"
+    echo "    and then from \$MRB_SOURCE/*/ups/product_deps there is no match"
 }
 
 # increment the major version
