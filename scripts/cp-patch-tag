@@ -133,7 +133,12 @@ for package in "${packages[@]}"; do
   git checkout ${patch_branch}
   current_branch=`git branch --show-current`
   if [[ ${current_branch} != ${patch_branch} ]]; then
-    echo "INFO: failed to checkout ${patch_branch} for ${package}, will skip"
+    echo "INFO: failed to checkout ${patch_branch} for ${package}, will checkout tag"
+    git checkout -b ${patch_branch} ${pkgver}
+    current_branch=`git branch --show-current`
+  fi
+  if [[ ${current_branch} != ${patch_branch} ]]; then
+    echo "INFO: failed to checkout ${patch_branch} or tag for ${package}, will skip"
     skip_package="true"
   fi
   if [[ ${skip_package} == "false" ]]; then
