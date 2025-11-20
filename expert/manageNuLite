@@ -51,8 +51,15 @@ function commit_ups_product_deps() {
 function maybe_tag() {
     local myver=$1
     have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
-    echo "checking for ${myver} in  ${REP} - found ${have_tag}"
-    mydotver=${myver//_/.}; mydotver=${mydotver#v}
+    local mydotver=${myver//_/.}; mydotver=${mydotver#v}
+    #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    have_upstream=`git remote -v | grep upstream | wc -l`
+    #echo "have_upstream is ${have_upstream}"
+    main_branch=master
+    have_main=`git branch -a | grep main | wc -l`
+    if (( ${have_main} != 0 )); then 
+      main_branch=main
+    fi
     if (( ${have_tag} > 0 )); then
       if [[ ${REP} == nutools ]]; then
         echo "merge changes in nutools with develop."
@@ -63,19 +70,65 @@ function maybe_tag() {
       else
         echo "tag $myver already exists: doing nothing."
       fi 
+    elif (( ${have_upstream} > 0 )); then
+      echo "working on a fork in ${REP}"
+      git checkout ${main_branch}
+      git pull upstream ${main_branch}
+      code_diff=`git diff release/${tag} | wc -l`
+      if (( ${code_diff} > 0 )); then
+	 echo "${REP} ${main_branch} does not match release/${tag} - check and fix"
+	 exit 1
+      fi
+      git merge -m"${REP} ${version} for nulite ${nulite_version}" release/${tag}   || exit 1
+      git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
+      git tag -a -m"${REP} ${mydotver} for nulite ${nulite_version}" ${mydotver}  || exit 1
+      git checkout develop  || exit 1
+      git pull upstram develop || exit 1
+      git merge -m"nulite ${nulite_version}" ${main_branch}  || exit 1
+      git push upstream ${main_branch} develop ${version} ${mydotver} || exit 1
     else
-      echo "ready to tag ${REP} with ${version} and ${mydotver}."
-      git checkout main  || exit 1
+      echo "ready to tag ${REP}"
+      git checkout ${main_branch}  || exit 1
       git pull  || exit 1
       git merge -m"${REP} ${version} for nulite ${nulite_version}" release/${tag}   || exit 1
       git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
       git tag -a -m"${REP} ${mydotver} for nulite ${nulite_version}" ${mydotver}  || exit 1
       git checkout develop  || exit 1
       git pull  || exit 1
-      git merge -m"nulite ${nulite_version}" release/${tag}  || exit 1
-      git push origin main develop ${version} ${mydotver} || exit 1
+      git merge -m"nulite ${nulite_version}" ${main_branch}  || exit 1
+      git push origin ${main_branch} develop ${version} ${mydotver} || exit 1
     fi
 }
+
+function maybe_tag_branch() {
+    local mybranch=$1
+    local myver=$2
+    local mydotver=${myver//_/.}; mydotver=${mydotver#v}
+    have_tag=`git tag | grep '^'"$myver"'\$' | wc -w`
+    #echo "checking for ${myver} in  ${REP} - found ${have_tag}"
+    have_upstream=`git remote -v | grep upstream | wc -l`
+    #echo "have_upstream is ${have_upstream}"
+    this_branch=`git status | grep "On branch" | cut -f 3 -d" "`
+    #echo "on branch ${this_branch}"
+    if (( ${have_tag} > 0 )); then
+      echo "tag $myver already exists: doing nothing."
+    elif (( ${have_upstream} > 0 )); then
+      echo "working on a fork in ${REP}"
+      echo "This should not happen if when tagging a branch - check and fix"
+      exit 1
+    elif [[ "${this_branch}" != "${mybranch}" ]]; then
+      echo "ERROR: on branch ${this_branch}"
+      echo "       expect to be on branch ${mybranch}"
+      exit 1
+    else
+      echo "ready to tag ${REP} on branch ${mybranch}"
+      git pull  || exit 1
+      git tag -a -m"${REP} ${version} for nulite ${nulite_version}" ${version}  || exit 1
+      git tag -a -m"${REP} ${mydotver} for nulite ${nulite_version}" ${mydotver}  || exit 1
+      git push origin ${mybranch} ${version} ${mydotver} || exit 1
+    fi
+}
+
 
 function verify_match() {
     echo "checking nutools and nulite versions"
@@ -98,10 +151,21 @@ function get_version()
   local package=$1
   version=empty
   ##echo "checking package ${package}"
-  version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+  # release candidates and test releases have the version in a different line
+  if [[ $(grep '^[  ]*project' CMakeLists.txt | grep VERSION) ]] ; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f3 -d " " | sed 's/\./_/g'`
+    ##echo "project version is $version"
+  else
+    version=v`grep 'PROJECT_NAME' CMakeLists.txt | grep _CMAKE_PROJECT_VERSION_STRING | tr -s '[:space:]' | cut -f2 -d " " | cut -f1 -d")" | sed 's/\./_/g' | sed 's/\-//g'`
+    ##echo "PROJECT_NAME version is $version"
+  fi
   # possible old style package
   if [[ ${version} == v ]]; then
-    version=`grep '^[  ]*parent' ups/product_deps | grep ${package} | tr "\t" " " | cut -f3 -d" "`
+    version=`grep '^[  ]*parent' ups/product_deps | tr "\t" " " | cut -f3 -d" "`
+  fi
+  # dealing with larpandoracontent
+  if [[ ${version} == vVERSION ]]; then
+    version=v`grep '^[  ]*project' CMakeLists.txt | grep ${package} | tr -s '[:space:]' | cut -f4 -d " " | sed 's/\./_/g' | sed 's/)//'`
   fi
   ##echo "Found ${package} ${version}"
 }
@@ -133,6 +197,17 @@ then
     usage
     exit 1
 fi
+# check for a valid command
+case $flow in
+    start ) ;;
+    update ) ;;
+#    commit ) ;;
+#    pr ) ;;
+    tag ) ;;
+    tagbranch ) tagbranch=${2}; tag=${3} ;;
+    merge ) ;;
+    *   ) echo "ERROR: Unknown option $flow" ; usage ; exit 1 ;;
+esac
 
 if [ -z "${MRB_SOURCE}" ]
 then
@@ -275,18 +350,23 @@ fi
 
 if [ "${flow}" = "tagbranch" ]
 then
+  if [ -z "${tagbranch}" ]; then
+    echo 'ERROR: no existing branch specified'
+    usage
+    exit 1
+  fi
+  get_version nulite
+  nulite_version=${version}
+  echo "found nulite_version ${nulite_version} for ${tag} on ${tagbranch}"
   for REP in $pkglist
   do
-     echo
      cd ${MRB_SOURCE}/${REP}
      # make sure we are on the expected branch
-     git checkout ${branch}  || exit 1
-     ##version=`grep ${REP} ups/product_deps | grep parent | tr -s '[:space:]' | cut -f3 -d " "`
-     get_version ${REP}
+     git checkout ${tagbranch}  || exit 1
+     get_version ${REP} 
      echo "begin ${REP} ${version}"
      commit_ups_product_deps
-     git tag -a -m"${REP} ${version} for nulite ${tag}" ${version}  || exit 1
-     git push origin ${branch} ${version} || exit 1
+     maybe_tag_branch "${tagbranch}" "${version}"
   done
 fi
 
