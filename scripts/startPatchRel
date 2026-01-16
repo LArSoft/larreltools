@@ -6,18 +6,15 @@
 thisComFull=$(basename $0)
 fullCom="${thisComFull%.*}"
 
-declare -a packages=(larana larreco larrecodnn larsim larsimrad larevt lardata larcore lareventdisplay larexamples larg4 larpandora larwirecell larsoft larsoftobj lardataobj lardataalg larcorealg larcoreobj larpandoracontent larvecutils)
-
 # Usage function
 function usage() {
     echo "Usage: $fullCom [-e <experiment>] [-q <base qualifier>] <working_dir> <new patch tag> <larsoft branch> [<experiment branch>]"
     echo "   create subdirectory <working_dir>/<new patch tag>, run newDev, then checkout code"
     echo "  options:"
     echo "   -q <base qualifier>: create subdirectories the specified qualifier"
-    echo "      If the base qualifier (e17, e19, e20, c2, c7, etc.) is not specified,"
-    echo "        create subdirectories for e20"
-    echo "      To use more than one qualifier (e.g., c7 and 20), "
-    echo "        repeat the command with another qualifier."
+    echo "      If the base qualifier is not specified, create subdirectories for e26"
+    echo "      The base qualifier should be one of e20, e26, c14 etc."
+    echo "      To use more than one qualifier, repeat the command with another qualifier."
     echo "   -e <experiment>: checkout larsoft and experiment code"
     echo "      experiment must be one of argoneut, dune, lariat, icarus, sbnd, or uboone"
     echo "      If no experiment is specified, only checkout larsoft."
@@ -46,12 +43,44 @@ create_working_directory() {
   source ${basequal}p/localProducts*/setup
   cd $MRB_SOURCE
   echo "checkout larsoft packages"
-  for package in "${packages[@]}"; do
-    if [ ! -d ${package} ]; then
-      mrb g -b ${larbranch} ${package} || \
-         { echo "ERROR: failed to clone ${package}"; rm -rf ${package}; }
+  if [ ! -d ${MRB_SOURCE}/larsoft ]; then
+    echo "checkout larsoft_suite"
+    mrb g larsoft_suite
+  fi
+  if [ ! -d ${MRB_SOURCE}/larsoftobj ]; then
+    echo "checkout larsoftobj_suite"
+    mrb g larsoftobj_suite
+  fi
+  echo "get larpandoracontent"
+  if [ ! -d ${MRB_SOURCE}/larpandoracontent ]; then
+    echo "checkout larpandoracontent"
+    mrb g larpandoracontent
+  fi
+  echo "get the requested branch"
+  dogit "checkout ${larbranch}"
+  # check to see if the branch exists
+  # ignore any directory that does not contain ups/product_deps
+  list=`ls $MRB_SOURCE -1`
+  for file in $list
+  do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
    fi
   done
+  for REP in $pkglist
+  do
+    cd ${MRB_SOURCE}/${REP}
+    curbranch=`git branch --show-current`
+    if [[ ${curbranch} != ${larbranch} ]]; then
+	    cd ${MRB_SOURCE}
+	    rm -rf ${REP}
+    fi
+  done
+  cd ${MRB_SOURCE}
   mrb uc
   #mrb g -b ${larbranch} larsoft_suite
   #echo "checkout larsoftobj_suite"
@@ -61,25 +90,19 @@ create_working_directory() {
     echo "checkout argoneutcode"
     mrb g argoneutcode
   elif [[ ${experiment} == "dune" ]]; then
-    echo "checkout dunetpc"
-    mrb g dunetpc
-    echo "checkout duneutil"
-    mrb g duneutil
+    echo "checkout dune"
+    mrb g -b ${expbranch} dune_suite
   elif [[ ${experiment} == "lariat" ]]; then
-    echo "checkout lariatsoft"
-    mrb g lariatsoft
-    mrb g -d lariatfragments lariat-online-lariatfragments
-    mrb g -d lariatutil lardbt-lariatutil
+    echo "checkout lariat"
+    mrb g lariat_suite
   elif [[ ${experiment} == "icarus" ]]; then
-    echo "checkout icaruscode"
-    mrb g icaruscode
-    mrb g icarusutil
+    echo "checkout icarus"
+    mrb g -b ${expbranch} sbn_suite
   elif [[ ${experiment} == "sbnd" ]]; then
-    echo "checkout sbndcode"
-    mrb g sbndcode
-    mrb g sbndutil
+    echo "checkout sbnd"
+    mrb g -b ${expbranch} sbn_suite
   elif [[ ${experiment} == "uboone" ]]; then
-    echo "checkout uboonecode"
+    echo "checkout uboone"
     mrb  g  -b ${expbranch} uboone_suite
   else
     echo "no experiment specified - just checking out larsoft"
@@ -160,8 +183,8 @@ then
 fi
 if [ -z "${basequal}" ]
 then
-    echo 'INFO: no base qualifier specified, will use e20'
-    basequal=e20
+    echo 'INFO: no base qualifier specified, will use e26'
+    basequal=e26
 fi
 if [[ ${dry_run} == "true" ]]; then
   echo "DRY RUN: working_dir is ${working_dir}"
